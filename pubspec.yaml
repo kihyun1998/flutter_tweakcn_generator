@@ -1,15 +1,28 @@
 name: flutter_tweakcn_generator
-description: A starting point for Dart libraries or applications.
-version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+description: >-
+  A code generator that converts tweakcn CSS themes into Flutter ThemeData,
+  ColorScheme, and ThemeExtension classes. Supports hex, rgb, hsl, oklch color
+  formats with light/dark mode, border radius, and box-shadow tokens.
+version: 0.1.0
+repository: https://github.com/kihyun1998/flutter_tweakcn_generator
+topics:
+  - theme
+  - code-generation
+  - css
+  - design-system
+  - shadcn
 
 environment:
-  sdk: ^3.9.2
+  sdk: ">=3.0.0 <4.0.0"
 
-# Add regular dependencies here.
 dependencies:
-  # path: ^1.9.0
+  build: ^2.4.0
+  source_gen: ^2.0.0
+  yaml: ^3.1.0
+  path: ^1.9.0
 
 dev_dependencies:
+  build_runner: ^2.4.0
+  build_test: ^2.2.0
+  test: ^1.25.0
   lints: ^6.0.0
-  test: ^1.25.6

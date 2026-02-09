@@ -1,0 +1,7 @@
+builders:
+  tweakcn:
+    import: "package:flutter_tweakcn_generator/builder.dart"
+    builder_factories: ["tweakcnBuilder"]
+    build_extensions: {".tweakcn.css": [".tweakcn.dart"]}
+    auto_apply: root_package
+    build_to: source
