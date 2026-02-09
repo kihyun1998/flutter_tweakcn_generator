@@ -352,7 +352,7 @@ class DartThemeGenerator {
     for (final token in _shadowTokens) {
       final camel = _shadowCamelCase(token);
       buf.writeln(
-        '      $camel: BoxShadow.lerpList($camel, other.$camel, t),',
+        '      $camel: BoxShadow.lerpList($camel, other.$camel, t) ?? [],',
       );
     }
     buf.writeln('    );');
