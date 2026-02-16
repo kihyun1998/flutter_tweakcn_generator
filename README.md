@@ -202,7 +202,7 @@ No additional configuration needed. Network access is allowed by default.
 
 ## Guides
 
-- [Using with Riverpod](docs/riverpod.md)
+- [Using with Riverpod](doc/riverpod.md)
 
 ## License
 
