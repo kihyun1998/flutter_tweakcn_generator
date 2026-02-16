@@ -19,7 +19,7 @@ A code generator that converts [tweakcn](https://tweakcn.com) CSS themes into Fl
 ```yaml
 # pubspec.yaml
 dev_dependencies:
-  flutter_tweakcn_generator: ^0.1.2
+  flutter_tweakcn_generator: ^0.1.3
   
 
 ### 2. Prepare CSS

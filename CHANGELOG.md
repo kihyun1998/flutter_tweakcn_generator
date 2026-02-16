@@ -1,3 +1,9 @@
+## 0.1.3
+
+- Widen `build` dependency to `>=2.0.0 <5.0.0` for broader compatibility
+- Widen `build_test` dependency to `>=2.0.0 <4.0.0`
+- Widen `build_runner` dependency to `>=2.0.0 <3.0.0`
+
 ## 0.1.2
 
 - Widen `build` dependency to `>=3.0.0 <5.0.0` for broader compatibility
