@@ -1,3 +1,9 @@
+## 0.1.1
+
+- Update `build` dependency to `^4.0.0`
+- Remove unused `source_gen` dependency
+- Require Dart SDK `>=3.7.0`
+
 ## 0.1.0
 
 - Initial release
