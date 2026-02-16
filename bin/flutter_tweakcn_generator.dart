@@ -40,6 +40,27 @@ void main(List<String> args) {
   outputFile.parent.createSync(recursive: true);
   outputFile.writeAsStringSync(dartCode);
 
+  // Auto-add google_fonts dependency if needed
+  if (dartCode.contains("package:google_fonts/google_fonts.dart")) {
+    final pubspecFile = File(p.join(projectDir, 'pubspec.yaml'));
+    final pubspecContent = pubspecFile.readAsStringSync();
+    if (!pubspecContent.contains('google_fonts:')) {
+      stdout.writeln('Adding google_fonts dependency...');
+      final result = Process.runSync(
+        'dart',
+        ['pub', 'add', 'google_fonts'],
+        workingDirectory: projectDir,
+      );
+      if (result.exitCode == 0) {
+        stdout.writeln('  Added google_fonts to pubspec.yaml');
+      } else {
+        stderr.writeln(
+          '  Failed to add google_fonts. Run manually: dart pub add google_fonts',
+        );
+      }
+    }
+  }
+
   stdout.writeln('Generated: ${config.output}');
   stdout.writeln(
     '  Colors: ${themeData.light.colors.length} light, '
