@@ -1,28 +1,42 @@
 import '../parser/shadow_parser.dart';
 
-/// Holds parsed theme data for both light and dark modes.
+/// Parsed theme data from a tweakcn CSS file, containing both light and dark
+/// mode tokens.
+///
+/// Produced by [CssParser.parse] and consumed by [DartThemeGenerator].
 class TweakcnThemeData {
+  /// Light mode tokens (from `:root` block).
   final ThemeModeData light;
+
+  /// Dark mode tokens (from `.dark` block).
   final ThemeModeData dark;
 
   const TweakcnThemeData({required this.light, required this.dark});
 }
 
-/// Holds parsed data for a single theme mode (light or dark).
+/// Parsed design tokens for a single theme mode (light or dark).
 class ThemeModeData {
-  /// CSS variable name (without `--`) → ARGB color int.
+  /// Color tokens keyed by CSS variable name (without `--`).
+  ///
+  /// Values are 32-bit ARGB integers (e.g. `0xFFFFFFFF` for white).
   final Map<String, int> colors;
 
-  /// Radius base value in logical pixels (converted from rem).
+  /// Base border radius in logical pixels (converted from CSS `rem`).
   final double? radius;
 
-  /// Spacing base value in logical pixels (converted from rem).
+  /// Base spacing in logical pixels (converted from CSS `rem`).
   final double? spacing;
 
-  /// Shadow name → list of shadow data.
+  /// Shadow tokens keyed by CSS variable name (e.g. `shadow-md`).
+  ///
+  /// Each value is a list of [ShadowData] since CSS shadows can be
+  /// comma-separated (multiple layers).
   final Map<String, List<ShadowData>> shadows;
 
-  /// Raw CSS font-sans value (e.g. `'Inter', sans-serif`).
+  /// Raw CSS `--font-sans` value (e.g. `'Inter', sans-serif`).
+  ///
+  /// Used to detect Google Font names for `textTheme` generation.
+  /// `null` if `--font-sans` is not present in the CSS.
   final String? fontSans;
 
   const ThemeModeData({

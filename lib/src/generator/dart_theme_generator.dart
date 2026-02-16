@@ -2,13 +2,23 @@ import '../models/tweakcn_theme_data.dart';
 import '../parser/shadow_parser.dart';
 
 /// Generates a complete Dart theme file from [TweakcnThemeData].
+///
+/// The output includes:
+/// - `ColorScheme` constants (light and dark)
+/// - `ThemeExtension` classes for colors, radius, and shadows
+/// - A `ThemeData` utility class with `light` and `dark` getters
+/// - `BuildContext` extensions for convenient access
+/// - `google_fonts` integration when a Google Font is detected in `--font-sans`
 class DartThemeGenerator {
+  /// Parsed theme data to generate code from.
   final TweakcnThemeData data;
+
+  /// Prefix for all generated class names (e.g. `Tweakcn` → `TweakcnColors`).
   final String classPrefix;
 
   DartThemeGenerator(this.data, {this.classPrefix = 'Tweakcn'});
 
-  /// Generates the full Dart source code.
+  /// Generates the full Dart source code as a single string.
   String generate() {
     final buf = StringBuffer();
     final googleFont = _extractGoogleFontName(data.light.fontSans);

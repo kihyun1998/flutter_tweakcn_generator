@@ -1,12 +1,23 @@
 import 'color_parser.dart';
 
-/// Parsed CSS box-shadow data.
+/// A single parsed CSS `box-shadow` layer.
+///
+/// Maps to Flutter's `BoxShadow` in the generated code.
 class ShadowData {
+  /// Horizontal offset in logical pixels.
   final double offsetX;
+
+  /// Vertical offset in logical pixels.
   final double offsetY;
+
+  /// Blur radius in logical pixels.
   final double blurRadius;
+
+  /// Spread radius in logical pixels (can be negative).
   final double spreadRadius;
-  final int color; // ARGB
+
+  /// Shadow color as a 32-bit ARGB integer.
+  final int color;
 
   const ShadowData({
     required this.offsetX,

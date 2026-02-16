@@ -1,4 +1,12 @@
-/// Converts tweakcn CSS themes to Flutter ThemeData code.
+/// A code generator that converts [tweakcn](https://tweakcn.com) CSS themes
+/// into Flutter `ThemeData`, `ColorScheme`, and `ThemeExtension` classes.
+///
+/// ## Usage
+///
+/// 1. Parse CSS with [CssParser.parse] to get [TweakcnThemeData].
+/// 2. Generate Dart code with [DartThemeGenerator.generate].
+///
+/// Or use the CLI: `dart run flutter_tweakcn_generator`
 library;
 
 export 'src/config.dart';

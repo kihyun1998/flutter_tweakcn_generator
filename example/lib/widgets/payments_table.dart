@@ -106,12 +106,9 @@ class PaymentsTable extends StatelessWidget {
           ...List.generate(_payments.length, (i) {
             final p = _payments[i];
             return Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: colors.border, width: 1),
-                ),
+                border: Border(top: BorderSide(color: colors.border, width: 1)),
               ),
               child: Row(
                 children: [
@@ -122,8 +119,9 @@ class PaymentsTable extends StatelessWidget {
                           ? Icons.check_box
                           : Icons.check_box_outline_blank,
                       size: 18,
-                      color:
-                          p.selected ? colors.primary : colors.mutedForeground,
+                      color: p.selected
+                          ? colors.primary
+                          : colors.mutedForeground,
                     ),
                   ),
                   Expanded(

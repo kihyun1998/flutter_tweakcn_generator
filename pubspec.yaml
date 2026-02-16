@@ -1,8 +1,7 @@
 name: flutter_tweakcn_generator
 description: >-
-  A code generator that converts tweakcn CSS themes into Flutter ThemeData,
-  ColorScheme, and ThemeExtension classes. Supports hex, rgb, hsl, oklch color
-  formats with light/dark mode, border radius, and box-shadow tokens.
+  Converts tweakcn CSS themes into Flutter ThemeData with ColorScheme,
+  ThemeExtension, Google Fonts, and light/dark mode support.
 version: 0.1.0
 repository: https://github.com/kihyun1998/flutter_tweakcn_generator
 topics:

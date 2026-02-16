@@ -4,8 +4,16 @@ import 'shadow_parser.dart';
 
 /// Parses tweakcn CSS into [TweakcnThemeData].
 ///
-/// Recognizes `:root { }` (light) and `.dark { }` (dark) blocks.
-/// Ignores `@theme inline { }` blocks (Tailwind-specific).
+/// Extracts design tokens from `:root { }` (light) and `.dark { }` (dark)
+/// blocks. Automatically strips `@theme inline { }` blocks added by
+/// Tailwind CSS v4.
+///
+/// Recognized tokens:
+/// - **Colors**: 32 named color variables (e.g. `--primary`, `--background`)
+/// - **Shadows**: 8 shadow levels (`--shadow-2xs` through `--shadow-2xl`)
+/// - **Radius**: `--radius` (rem → px conversion)
+/// - **Spacing**: `--spacing` (rem → px conversion)
+/// - **Font**: `--font-sans` (raw CSS font stack)
 class CssParser {
   /// CSS variable names that represent colors.
   static const _colorVariables = {
@@ -55,7 +63,7 @@ class CssParser {
     'shadow-2xl',
   };
 
-  /// Parses a full CSS string from tweakcn.
+  /// Parses a full CSS string copied from [tweakcn.com](https://tweakcn.com).
   static TweakcnThemeData parse(String css) {
     // Remove @theme inline { ... } blocks
     final cleaned = _removeAtThemeBlocks(css);

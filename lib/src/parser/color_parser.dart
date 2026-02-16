@@ -1,8 +1,12 @@
 import 'dart:math' as math;
 
-/// Parses CSS color strings into ARGB integer values.
+/// Parses CSS color strings into 32-bit ARGB integer values.
 ///
-/// Supports hex (#fff, #ffffff, #ffffffff), rgb(), hsl(), and oklch() formats.
+/// Supported formats:
+/// - **Hex**: `#rgb`, `#rrggbb`, `#rrggbbaa`
+/// - **RGB**: `rgb(255, 0, 0)`, `rgb(255 0 0 / 0.5)`
+/// - **HSL**: `hsl(0 100% 50%)`, `hsl(0, 100%, 50%, 0.5)`
+/// - **OKLCH**: `oklch(0.5 0.2 240)`, `oklch(0.5 0.2 240 / 0.8)`
 class ColorParser {
   static const int _fullAlpha = 0xFF000000;
 

@@ -1,19 +1,20 @@
 # flutter_tweakcn_generator
 
-[tweakcn](https://tweakcn.com)에서 복사한 CSS 테마를 Flutter `ThemeData` 코드로 변환하는 코드 제너레이터.
+A code generator that converts [tweakcn](https://tweakcn.com) CSS themes into Flutter `ThemeData`, `ColorScheme`, and `ThemeExtension` classes.
 
 ## Features
 
-- **4가지 색상 포맷** 지원: `hex`, `rgb()`, `hsl()`, `oklch()`
-- **Light / Dark** 모드 자동 분리 (`:root` / `.dark`)
-- **ColorScheme** 매핑 생성
-- **ThemeExtension** 생성: Colors, Radius, Shadows
-- **BuildContext extension** 생성: `context.tweakcnColors`, `context.tweakcnRadius`, `context.tweakcnShadows`
-- **CLI** 및 **build_runner** 지원
+- **Color formats**: `hex`, `rgb()`, `hsl()`, `oklch()`
+- **Light / Dark mode**: auto-split from `:root` / `.dark` blocks
+- **ColorScheme** mapping
+- **ThemeExtension** generation: Colors, Radius, Shadows
+- **Google Fonts**: auto-detects `--font-sans` and generates `GoogleFonts.xxxTextTheme()`
+- **BuildContext extensions**: `context.tweakcnColors`, `context.tweakcnRadius`, `context.tweakcnShadows`
+- **CLI** and **build_runner** support
 
 ## Getting Started
 
-### 1. 설치
+### 1. Install
 
 ```yaml
 # pubspec.yaml
@@ -21,9 +22,9 @@ dev_dependencies:
   flutter_tweakcn_generator: ^0.1.0
 ```
 
-### 2. CSS 파일 준비
+### 2. Prepare CSS
 
-[tweakcn.com](https://tweakcn.com)에서 테마를 커스터마이징한 뒤 CSS를 복사하여 프로젝트 루트에 `tweakcn.css`로 저장합니다.
+Customize your theme at [tweakcn.com](https://tweakcn.com), copy the CSS, and save it as `tweakcn.css` in your project root.
 
 ```css
 :root {
@@ -32,6 +33,7 @@ dev_dependencies:
   --primary: #171717;
   --primary-foreground: #fafafa;
   /* ... */
+  --font-sans: 'Inter', sans-serif;
   --radius: 0.625rem;
 }
 
@@ -42,15 +44,17 @@ dev_dependencies:
 }
 ```
 
-### 3. 코드 생성
+### 3. Generate
 
 ```bash
 dart run flutter_tweakcn_generator
 ```
 
-기본적으로 `tweakcn.css`를 읽어 `lib/theme/tweakcn_theme.g.dart`를 생성합니다.
+Reads `tweakcn.css` and generates `lib/theme/tweakcn_theme.g.dart` by default.
 
-### 4. 사용
+If a Google Font is detected in `--font-sans`, the `google_fonts` package is automatically added to your `pubspec.yaml`.
+
+### 4. Usage
 
 ```dart
 import 'theme/tweakcn_theme.g.dart';
@@ -61,7 +65,7 @@ MaterialApp(
 );
 ```
 
-위젯에서 직접 접근:
+Access tokens in widgets:
 
 ```dart
 // Colors
@@ -82,16 +86,16 @@ Container(
 
 ## Configuration
 
-`pubspec.yaml`에서 설정을 변경할 수 있습니다:
+Customize settings in `pubspec.yaml`:
 
 ```yaml
 flutter_tweakcn_generator:
-  input: tweakcn.css                        # CSS 파일 경로 (기본값)
-  output: lib/theme/tweakcn_theme.g.dart    # 출력 경로 (기본값)
-  class_prefix: Tweakcn                     # 클래스 접두사 (기본값)
+  input: tweakcn.css                        # CSS file path (default)
+  output: lib/theme/tweakcn_theme.g.dart    # output path (default)
+  class_prefix: Tweakcn                     # class name prefix (default)
 ```
 
-`class_prefix`를 변경하면 생성되는 클래스 이름이 바뀝니다:
+Changing `class_prefix` renames the generated classes:
 
 ```dart
 // class_prefix: My
@@ -103,7 +107,7 @@ context.myShadows.shadowMd
 
 ## build_runner
 
-`*.tweakcn.css` 확장자를 사용하면 build_runner로도 생성할 수 있습니다:
+Use the `*.tweakcn.css` extension to generate via build_runner:
 
 ```bash
 dart run build_runner build
@@ -111,16 +115,14 @@ dart run build_runner build
 
 ## Generated Code
 
-생성되는 코드에는 다음이 포함됩니다:
-
-| 생성 항목 | 설명 |
+| Output | Description |
 |---|---|
-| `ColorScheme` (light/dark) | CSS 색상 → Material ColorScheme 매핑 |
-| `TweakcnColors` | 모든 색상 토큰 (ThemeExtension) |
+| `ColorScheme` (light/dark) | CSS colors mapped to Material ColorScheme |
+| `TweakcnColors` | All color tokens (ThemeExtension) |
 | `TweakcnRadius` | sm, md, lg, xl (ThemeExtension) |
-| `TweakcnShadows` | shadow-2xs ~ shadow-2xl (ThemeExtension) |
+| `TweakcnShadows` | shadow-2xs through shadow-2xl (ThemeExtension) |
 | `TweakcnTheme` | `ThemeData.light` / `ThemeData.dark` |
-| `TweakcnBuildContext` | `context.tweakcnColors` 등 편의 extension |
+| `TweakcnBuildContext` | Convenience extensions like `context.tweakcnColors` |
 
 ### ColorScheme Mapping
 
@@ -140,6 +142,55 @@ dart run build_runner build
 | `--muted` | `surfaceContainerHighest` |
 | `--muted-foreground` | `onSurfaceVariant` |
 
+### Google Fonts
+
+When `--font-sans` contains a specific font name, a `textTheme` is generated using the `google_fonts` package:
+
+```css
+/* Generates: GoogleFonts.interTextTheme() */
+--font-sans: 'Inter', sans-serif;
+
+/* Generates: GoogleFonts.notoSansKrTextTheme() */
+--font-sans: 'Noto Sans KR', sans-serif;
+
+/* No generation (system font stack) */
+--font-sans: ui-sans-serif, system-ui, sans-serif;
+```
+
+## Platform Setup (Google Fonts)
+
+When using `google_fonts`, the app needs network access to download fonts at runtime. The following platform-specific configuration is required:
+
+### macOS
+
+Add `com.apple.security.network.client` to both entitlements files:
+
+**`macos/Runner/DebugProfile.entitlements`** and **`macos/Runner/Release.entitlements`**:
+
+```xml
+<key>com.apple.security.network.client</key>
+<true/>
+```
+
+> Without this, macOS sandbox blocks outgoing connections and you'll get `Operation not permitted` errors.
+
+### Android
+
+Add the `INTERNET` permission to `android/app/src/main/AndroidManifest.xml`:
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET"/>
+    ...
+</manifest>
+```
+
+> The `debug/AndroidManifest.xml` includes this by default, but **release builds require it in `main`**.
+
+### iOS / Windows / Web
+
+No additional configuration needed. Network access is allowed by default.
+
 ## Supported Color Formats
 
 ```css
@@ -148,6 +199,10 @@ dart run build_runner build
 --primary: hsl(0 0% 9%);          /* hsl */
 --primary: oklch(0.21 0 0);       /* oklch */
 ```
+
+## Guides
+
+- [Using with Riverpod](docs/riverpod.md)
 
 ## License
 
