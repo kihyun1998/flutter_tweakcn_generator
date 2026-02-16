@@ -61,6 +61,7 @@ void main(List<String> args) {
     }
   }
 
+  // Summary
   stdout.writeln('Generated: ${config.output}');
   stdout.writeln(
     '  Colors: ${themeData.light.colors.length} light, '
@@ -73,4 +74,12 @@ void main(List<String> args) {
   stdout.writeln(
     '  Radius: ${themeData.light.radius ?? themeData.dark.radius ?? "default"}',
   );
+
+  final fontMatch =
+      RegExp(r'GoogleFonts\.(\w+)TextTheme').firstMatch(dartCode);
+  if (fontMatch != null) {
+    stdout.writeln('  Font: ${fontMatch.group(1)} (google_fonts)');
+  } else if (themeData.light.fontSans != null) {
+    stdout.writeln('  Font: system default');
+  }
 }

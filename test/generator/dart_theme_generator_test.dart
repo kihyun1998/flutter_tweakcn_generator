@@ -171,6 +171,45 @@ void main() {
       expect(code, contains('GoogleFonts.notoSansKrTextTheme()'));
     });
 
+    test('extracts Google Font from full tweakcn font stack', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData);
+      final code = generator.generate();
+
+      expect(code, contains('GoogleFonts.interTextTheme()'));
+    });
+
+    test('skips Google Fonts for default tweakcn system font stack', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData);
+      final code = generator.generate();
+
+      expect(code, isNot(contains('google_fonts')));
+      expect(code, isNot(contains('textTheme:')));
+    });
+
     test('generates code with custom class prefix', () {
       final css = File('test/fixtures/sample_hex.css').readAsStringSync();
       final themeData = CssParser.parse(css);
