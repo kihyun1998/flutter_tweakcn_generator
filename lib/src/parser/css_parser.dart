@@ -165,7 +165,7 @@ class CssParser {
     final shadows = <String, List<ShadowData>>{};
     double? radius;
     double? spacing;
-    String? fontFamily;
+    String? fontSans;
 
     for (final entry in vars.entries) {
       final name = entry.key;
@@ -181,8 +181,8 @@ class CssParser {
         radius = _parseRemToPixels(value);
       } else if (name == 'spacing') {
         spacing = _parseRemToPixels(value);
-      } else if (name == 'font-family') {
-        fontFamily = value;
+      } else if (name == 'font-sans') {
+        fontSans = value;
       }
     }
 
@@ -191,7 +191,7 @@ class CssParser {
       radius: radius,
       spacing: spacing,
       shadows: shadows,
-      fontFamily: fontFamily,
+      fontSans: fontSans,
     );
   }
 

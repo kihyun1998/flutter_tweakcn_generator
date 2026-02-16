@@ -22,14 +22,14 @@ class ThemeModeData {
   /// Shadow name → list of shadow data.
   final Map<String, List<ShadowData>> shadows;
 
-  /// Font family string, if specified.
-  final String? fontFamily;
+  /// Raw CSS font-sans value (e.g. `'Inter', sans-serif`).
+  final String? fontSans;
 
   const ThemeModeData({
     required this.colors,
     this.radius,
     this.spacing,
     this.shadows = const {},
-    this.fontFamily,
+    this.fontSans,
   });
 }

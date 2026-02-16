@@ -123,6 +123,54 @@ void main() {
       expect(generatedCode, contains('spreadRadius:'));
     });
 
+    test('generates google_fonts import when font-sans has Google Font', () {
+      expect(generatedCode,
+          contains("import 'package:google_fonts/google_fonts.dart';"));
+    });
+
+    test('generates textTheme with GoogleFonts in ThemeData', () {
+      expect(generatedCode, contains('textTheme: GoogleFonts.interTextTheme()'));
+    });
+
+    test('does not generate google_fonts import for system font stack', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData);
+      final code = generator.generate();
+
+      expect(code, isNot(contains('google_fonts')));
+      expect(code, isNot(contains('textTheme:')));
+    });
+
+    test('generates correct method name for multi-word Google Font', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: 'Noto Sans KR', sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData);
+      final code = generator.generate();
+
+      expect(code, contains('GoogleFonts.notoSansKrTextTheme()'));
+    });
+
     test('generates code with custom class prefix', () {
       final css = File('test/fixtures/sample_hex.css').readAsStringSync();
       final themeData = CssParser.parse(css);

@@ -115,6 +115,23 @@ void main() {
       expect(result.light.shadows['shadow-2xl'], hasLength(1));
     });
 
+    test('parses font-sans', () {
+      final css = File('test/fixtures/sample_hex.css').readAsStringSync();
+      final result = CssParser.parse(css);
+
+      expect(result.light.fontSans, "'Inter', sans-serif");
+    });
+
+    test('font-sans is null when not specified', () {
+      const css = '''
+:root {
+  --background: #ffffff;
+}
+''';
+      final result = CssParser.parse(css);
+      expect(result.light.fontSans, isNull);
+    });
+
     test('handles empty CSS', () {
       final result = CssParser.parse('');
       expect(result.light.colors, isEmpty);
