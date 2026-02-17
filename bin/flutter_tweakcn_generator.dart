@@ -15,8 +15,9 @@ void main(List<String> args) {
   final cssFile = File(p.join(projectDir, config.input));
   if (!cssFile.existsSync()) {
     stderr.writeln('Error: CSS file not found: ${config.input}');
-    stderr
-        .writeln('Create ${config.input} or update the path in pubspec.yaml:');
+    stderr.writeln(
+      'Create ${config.input} or update the path in pubspec.yaml:',
+    );
     stderr.writeln('');
     stderr.writeln('flutter_tweakcn_generator:');
     stderr.writeln('  input: your-theme.css');
@@ -46,11 +47,11 @@ void main(List<String> args) {
     final pubspecContent = pubspecFile.readAsStringSync();
     if (!pubspecContent.contains('google_fonts:')) {
       stdout.writeln('Adding google_fonts dependency...');
-      final result = Process.runSync(
-        'dart',
-        ['pub', 'add', 'google_fonts'],
-        workingDirectory: projectDir,
-      );
+      final result = Process.runSync('dart', [
+        'pub',
+        'add',
+        'google_fonts',
+      ], workingDirectory: projectDir);
       if (result.exitCode == 0) {
         stdout.writeln('  Added google_fonts to pubspec.yaml');
       } else {
@@ -75,10 +76,19 @@ void main(List<String> args) {
     '  Radius: ${themeData.light.radius ?? themeData.dark.radius ?? "default"}',
   );
 
-  final fontMatch =
-      RegExp(r'GoogleFonts\.(\w+)TextTheme').firstMatch(dartCode);
+  final fontMatch = RegExp(r'GoogleFonts\.(\w+)TextTheme').firstMatch(dartCode);
   if (fontMatch != null) {
-    stdout.writeln('  Font: ${fontMatch.group(1)} (google_fonts)');
+    final fallbackMatches = RegExp(
+      r'GoogleFonts\.(\w+)\(\)\.fontFamily',
+    ).allMatches(dartCode);
+    final fallbacks = fallbackMatches.map((m) => m.group(1)).toSet().toList();
+    if (fallbacks.isNotEmpty) {
+      stdout.writeln(
+        '  Font: ${fontMatch.group(1)} (google_fonts) → fallback: ${fallbacks.join(', ')}',
+      );
+    } else {
+      stdout.writeln('  Font: ${fontMatch.group(1)} (google_fonts)');
+    }
   } else if (themeData.light.fontSans != null) {
     stdout.writeln('  Font: system default');
   }

@@ -139,11 +139,12 @@ class ColorParser {
     final hRaw = parts[2].trim();
 
     final L = lRaw.endsWith('%') ? _parsePercentage(lRaw) : _parseNumber(lRaw);
-    final C = cRaw.endsWith('%')
-        ? (_parsePercentage(cRaw) != null
-            ? _parsePercentage(cRaw)! * 0.4
-            : null)
-        : _parseNumber(cRaw);
+    final C =
+        cRaw.endsWith('%')
+            ? (_parsePercentage(cRaw) != null
+                ? _parsePercentage(cRaw)! * 0.4
+                : null)
+            : _parseNumber(cRaw);
     final h = _parseNumber(hRaw); // degrees
 
     final a = parts.length >= 4 ? _parseAlpha(parts[3]) : 1.0;
@@ -172,19 +173,15 @@ class ColorParser {
     final g = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3;
     final b = -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3;
 
-    return _argb(
-      a,
-      _linearToSrgb(r),
-      _linearToSrgb(g),
-      _linearToSrgb(b),
-    );
+    return _argb(a, _linearToSrgb(r), _linearToSrgb(g), _linearToSrgb(b));
   }
 
   static int _linearToSrgb(double c) {
     final clamped = c.clamp(0.0, 1.0);
-    final srgb = clamped <= 0.0031308
-        ? 12.92 * clamped
-        : 1.055 * math.pow(clamped, 1.0 / 2.4) - 0.055;
+    final srgb =
+        clamped <= 0.0031308
+            ? 12.92 * clamped
+            : 1.055 * math.pow(clamped, 1.0 / 2.4) - 0.055;
     return (srgb * 255).round().clamp(0, 255);
   }
 

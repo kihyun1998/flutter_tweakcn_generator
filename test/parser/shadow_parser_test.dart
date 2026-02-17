@@ -34,9 +34,7 @@ void main() {
     });
 
     test('parses shadow with hsl color', () {
-      final result = ShadowParser.parse(
-        '0 1px 2px 0 hsl(0 0% 0% / 0.05)',
-      );
+      final result = ShadowParser.parse('0 1px 2px 0 hsl(0 0% 0% / 0.05)');
       expect(result, hasLength(1));
       expect(result[0].offsetY, 1);
       expect(result[0].blurRadius, 2);
@@ -64,9 +62,7 @@ void main() {
     });
 
     test('handles negative spread radius', () {
-      final result = ShadowParser.parse(
-        '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-      );
+      final result = ShadowParser.parse('0 4px 6px -1px rgba(0, 0, 0, 0.1)');
       expect(result, hasLength(1));
       expect(result[0].spreadRadius, -1);
     });

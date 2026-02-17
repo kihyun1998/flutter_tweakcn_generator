@@ -96,17 +96,18 @@ void main() {
       final result = CssParser.parse(css);
 
       expect(
-          result.light.shadows.keys,
-          containsAll([
-            'shadow-2xs',
-            'shadow-xs',
-            'shadow-sm',
-            'shadow',
-            'shadow-md',
-            'shadow-lg',
-            'shadow-xl',
-            'shadow-2xl',
-          ]));
+        result.light.shadows.keys,
+        containsAll([
+          'shadow-2xs',
+          'shadow-xs',
+          'shadow-sm',
+          'shadow',
+          'shadow-md',
+          'shadow-lg',
+          'shadow-xl',
+          'shadow-2xl',
+        ]),
+      );
 
       // shadow-md has 2 shadows
       expect(result.light.shadows['shadow-md'], hasLength(2));

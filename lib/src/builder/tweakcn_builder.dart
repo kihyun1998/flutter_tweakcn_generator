@@ -13,8 +13,8 @@ class TweakcnBuilder implements Builder {
 
   @override
   Map<String, List<String>> get buildExtensions => {
-        '.tweakcn.css': ['.tweakcn.dart'],
-      };
+    '.tweakcn.css': ['.tweakcn.dart'],
+  };
 
   @override
   Future<void> build(BuildStep buildStep) async {

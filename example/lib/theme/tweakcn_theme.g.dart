@@ -640,7 +640,9 @@ class TweakcnTheme {
   static ThemeData get light => ThemeData(
     brightness: Brightness.light,
     colorScheme: _lightColorScheme,
-    textTheme: GoogleFonts.architectsDaughterTextTheme(),
+    textTheme: GoogleFonts.architectsDaughterTextTheme().apply(
+      fontFamilyFallback: [GoogleFonts.notoSansKr().fontFamily!],
+    ),
     extensions: [
       TweakcnColors.light,
       TweakcnRadius.standard,
@@ -651,7 +653,9 @@ class TweakcnTheme {
   static ThemeData get dark => ThemeData(
     brightness: Brightness.dark,
     colorScheme: _darkColorScheme,
-    textTheme: GoogleFonts.architectsDaughterTextTheme(),
+    textTheme: GoogleFonts.architectsDaughterTextTheme().apply(
+      fontFamilyFallback: [GoogleFonts.notoSansKr().fontFamily!],
+    ),
     extensions: [
       TweakcnColors.dark,
       TweakcnRadius.standard,

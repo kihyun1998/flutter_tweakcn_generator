@@ -17,7 +17,9 @@ void main() {
 
     test('generates valid Dart with required imports', () {
       expect(
-          generatedCode, contains("import 'package:flutter/material.dart';"));
+        generatedCode,
+        contains("import 'package:flutter/material.dart';"),
+      );
     });
 
     test('generates header comment', () {
@@ -36,9 +38,9 @@ void main() {
 
     test('generates TweakcnColors extension', () {
       expect(
-          generatedCode,
-          contains(
-              'class TweakcnColors extends ThemeExtension<TweakcnColors>'));
+        generatedCode,
+        contains('class TweakcnColors extends ThemeExtension<TweakcnColors>'),
+      );
       expect(generatedCode, contains('static const light = TweakcnColors('));
       expect(generatedCode, contains('static const dark = TweakcnColors('));
       expect(generatedCode, contains('TweakcnColors copyWith('));
@@ -47,9 +49,9 @@ void main() {
 
     test('generates TweakcnRadius extension', () {
       expect(
-          generatedCode,
-          contains(
-              'class TweakcnRadius extends ThemeExtension<TweakcnRadius>'));
+        generatedCode,
+        contains('class TweakcnRadius extends ThemeExtension<TweakcnRadius>'),
+      );
       expect(generatedCode, contains('static const standard = TweakcnRadius('));
       expect(generatedCode, contains('TweakcnRadius copyWith('));
       expect(generatedCode, contains('TweakcnRadius lerp('));
@@ -57,9 +59,9 @@ void main() {
 
     test('generates TweakcnShadows extension', () {
       expect(
-          generatedCode,
-          contains(
-              'class TweakcnShadows extends ThemeExtension<TweakcnShadows>'));
+        generatedCode,
+        contains('class TweakcnShadows extends ThemeExtension<TweakcnShadows>'),
+      );
       expect(generatedCode, contains('static const light = TweakcnShadows('));
       expect(generatedCode, contains('static const dark = TweakcnShadows('));
     });
@@ -71,8 +73,10 @@ void main() {
     });
 
     test('generates BuildContext extension', () {
-      expect(generatedCode,
-          contains('extension TweakcnBuildContext on BuildContext'));
+      expect(
+        generatedCode,
+        contains('extension TweakcnBuildContext on BuildContext'),
+      );
       expect(generatedCode, contains('tweakcnColors'));
       expect(generatedCode, contains('tweakcnRadius'));
       expect(generatedCode, contains('tweakcnShadows'));
@@ -124,12 +128,17 @@ void main() {
     });
 
     test('generates google_fonts import when font-sans has Google Font', () {
-      expect(generatedCode,
-          contains("import 'package:google_fonts/google_fonts.dart';"));
+      expect(
+        generatedCode,
+        contains("import 'package:google_fonts/google_fonts.dart';"),
+      );
     });
 
     test('generates textTheme with GoogleFonts in ThemeData', () {
-      expect(generatedCode, contains('textTheme: GoogleFonts.interTextTheme()'));
+      expect(
+        generatedCode,
+        contains('textTheme: GoogleFonts.interTextTheme()'),
+      );
     });
 
     test('does not generate google_fonts import for system font stack', () {
@@ -210,6 +219,57 @@ void main() {
       expect(code, isNot(contains('textTheme:')));
     });
 
+    test('generates fontFamilyFallback for multiple Google Fonts', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: 'Architects Daughter', 'Noto Sans KR', sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData);
+      final code = generator.generate();
+
+      expect(
+        code,
+        contains("import 'package:google_fonts/google_fonts.dart';"),
+      );
+      expect(
+        code,
+        contains('GoogleFonts.architectsDaughterTextTheme().apply('),
+      );
+      expect(
+        code,
+        contains('fontFamilyFallback: [GoogleFonts.notoSansKr().fontFamily!]'),
+      );
+    });
+
+    test('generates fontFamilyFallback with multiple fallback fonts', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: 'Inter', 'Noto Sans KR', 'Noto Sans JP', sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData);
+      final code = generator.generate();
+
+      expect(code, contains('GoogleFonts.interTextTheme().apply('));
+      expect(code, contains('GoogleFonts.notoSansKr().fontFamily!'));
+      expect(code, contains('GoogleFonts.notoSansJp().fontFamily!'));
+    });
+
     test('generates code with custom class prefix', () {
       final css = File('test/fixtures/sample_hex.css').readAsStringSync();
       final themeData = CssParser.parse(css);
@@ -219,7 +279,9 @@ void main() {
       expect(code, contains('class MyColors extends ThemeExtension<MyColors>'));
       expect(code, contains('class MyRadius extends ThemeExtension<MyRadius>'));
       expect(
-          code, contains('class MyShadows extends ThemeExtension<MyShadows>'));
+        code,
+        contains('class MyShadows extends ThemeExtension<MyShadows>'),
+      );
       expect(code, contains('class MyTheme'));
       expect(code, contains('extension MyBuildContext on BuildContext'));
       expect(code, contains('myColors'));

@@ -8,7 +8,7 @@ A code generator that converts [tweakcn](https://tweakcn.com) CSS themes into Fl
 - **Light / Dark mode**: auto-split from `:root` / `.dark` blocks
 - **ColorScheme** mapping
 - **ThemeExtension** generation: Colors, Radius, Shadows
-- **Google Fonts**: auto-detects `--font-sans` and generates `GoogleFonts.xxxTextTheme()`
+- **Google Fonts**: auto-detects `--font-sans` and generates `GoogleFonts.xxxTextTheme()` with `fontFamilyFallback` support
 - **BuildContext extensions**: `context.tweakcnColors`, `context.tweakcnRadius`, `context.tweakcnShadows`
 - **CLI** and **build_runner** support
 
@@ -19,7 +19,7 @@ A code generator that converts [tweakcn](https://tweakcn.com) CSS themes into Fl
 ```yaml
 # pubspec.yaml
 dev_dependencies:
-  flutter_tweakcn_generator: ^0.1.3
+  flutter_tweakcn_generator: ^0.1.4
   
 
 ### 2. Prepare CSS
@@ -156,6 +156,25 @@ When `--font-sans` contains a specific font name, a `textTheme` is generated usi
 /* No generation (system font stack) */
 --font-sans: ui-sans-serif, system-ui, sans-serif;
 ```
+
+#### Font Fallback
+
+Multiple Google Fonts in `--font-sans` are supported as fallback fonts. The first font becomes the primary `textTheme`, and the rest are added to `fontFamilyFallback`. This is useful for CJK (Korean, Japanese, Chinese) font support:
+
+```css
+/* Primary: Architects Daughter, Fallback: Noto Sans KR */
+--font-sans: 'Architects Daughter', 'Noto Sans KR', sans-serif;
+```
+
+Generates:
+
+```dart
+textTheme: GoogleFonts.architectsDaughterTextTheme().apply(
+  fontFamilyFallback: [GoogleFonts.notoSansKr().fontFamily!],
+),
+```
+
+Characters not found in the primary font (e.g. Korean) automatically fall back to the next font.
 
 ## Platform Setup (Google Fonts)
 

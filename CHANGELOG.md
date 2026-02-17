@@ -1,3 +1,7 @@
+## 0.1.4
+
+- Add `fontFamilyFallback` support: multiple Google Fonts in `--font-sans` are now used as primary + fallback fonts (e.g. `Architects Daughter, Noto Sans KR, sans-serif`)
+
 ## 0.1.3
 
 - Widen `build` dependency to `>=2.0.0 <5.0.0` for broader compatibility
