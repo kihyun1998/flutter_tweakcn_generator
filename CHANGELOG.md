@@ -1,3 +1,10 @@
+## 0.2.0
+
+- Add `font_mode: local` option: downloads `.ttf` files from Google Fonts and generates `fontFamily` / `fontFamilyFallback` code without `google_fonts` runtime dependency
+- Auto-download font files into `fonts/` directory
+- Auto-add `flutter > fonts` declarations to `pubspec.yaml`
+- Support both `google_fonts` (default) and `local` font modes via `pubspec.yaml` configuration
+
 ## 0.1.4
 
 - Add `fontFamilyFallback` support: multiple Google Fonts in `--font-sans` are now used as primary + fallback fonts (e.g. `Architects Daughter, Noto Sans KR, sans-serif`)

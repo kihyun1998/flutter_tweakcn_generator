@@ -10,6 +10,8 @@
 library;
 
 export 'src/config.dart';
+export 'src/font/font_downloader.dart';
+export 'src/font/pubspec_font_adder.dart';
 export 'src/generator/dart_theme_generator.dart';
 export 'src/models/tweakcn_theme_data.dart';
 export 'src/parser/color_parser.dart';

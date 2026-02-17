@@ -8,8 +8,12 @@ import '../parser/css_parser.dart';
 /// A [Builder] that converts `.tweakcn.css` files to `.tweakcn.dart` files.
 class TweakcnBuilder implements Builder {
   final String classPrefix;
+  final String fontMode;
 
-  TweakcnBuilder({this.classPrefix = 'Tweakcn'});
+  TweakcnBuilder({
+    this.classPrefix = 'Tweakcn',
+    this.fontMode = 'google_fonts',
+  });
 
   @override
   Map<String, List<String>> get buildExtensions => {
@@ -22,7 +26,11 @@ class TweakcnBuilder implements Builder {
     final css = await buildStep.readAsString(inputId);
 
     final themeData = CssParser.parse(css);
-    final generator = DartThemeGenerator(themeData, classPrefix: classPrefix);
+    final generator = DartThemeGenerator(
+      themeData,
+      classPrefix: classPrefix,
+      fontMode: fontMode,
+    );
     final dartCode = generator.generate();
 
     final outputId = inputId.changeExtension('.tweakcn.dart');

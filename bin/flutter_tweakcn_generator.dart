@@ -1,11 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter_tweakcn_generator/src/config.dart';
+import 'package:flutter_tweakcn_generator/src/font/font_downloader.dart';
+import 'package:flutter_tweakcn_generator/src/font/pubspec_font_adder.dart';
 import 'package:flutter_tweakcn_generator/src/generator/dart_theme_generator.dart';
 import 'package:flutter_tweakcn_generator/src/parser/css_parser.dart';
 import 'package:path/path.dart' as p;
 
-void main(List<String> args) {
+Future<void> main(List<String> args) async {
   final projectDir = Directory.current.path;
 
   // Read config
@@ -33,6 +35,7 @@ void main(List<String> args) {
   final generator = DartThemeGenerator(
     themeData,
     classPrefix: config.classPrefix,
+    fontMode: config.fontMode,
   );
   final dartCode = generator.generate();
 
@@ -41,8 +44,29 @@ void main(List<String> args) {
   outputFile.parent.createSync(recursive: true);
   outputFile.writeAsStringSync(dartCode);
 
-  // Auto-add google_fonts dependency if needed
-  if (dartCode.contains("package:google_fonts/google_fonts.dart")) {
+  // Font handling based on fontMode
+  final googleFonts = DartThemeGenerator.extractGoogleFontNames(
+    themeData.light.fontSans,
+  );
+
+  if (config.fontMode == 'local' && googleFonts.isNotEmpty) {
+    // Local mode: download .ttf files and update pubspec.yaml
+    final fontsDir = p.join(projectDir, 'fonts');
+    final allDownloaded = <DownloadedFont>[];
+
+    for (final fontName in googleFonts) {
+      stdout.writeln('Downloading font: $fontName');
+      final downloaded = await FontDownloader.download(fontName, fontsDir);
+      allDownloaded.addAll(downloaded);
+    }
+
+    if (allDownloaded.isNotEmpty) {
+      final pubspecPath = p.join(projectDir, 'pubspec.yaml');
+      PubspecFontAdder.addFonts(pubspecPath, allDownloaded);
+      stdout.writeln('Updated pubspec.yaml with font declarations');
+    }
+  } else if (dartCode.contains("package:google_fonts/google_fonts.dart")) {
+    // Google Fonts mode: auto-add dependency
     final pubspecFile = File(p.join(projectDir, 'pubspec.yaml'));
     final pubspecContent = pubspecFile.readAsStringSync();
     if (!pubspecContent.contains('google_fonts:')) {
@@ -76,20 +100,35 @@ void main(List<String> args) {
     '  Radius: ${themeData.light.radius ?? themeData.dark.radius ?? "default"}',
   );
 
-  final fontMatch = RegExp(r'GoogleFonts\.(\w+)TextTheme').firstMatch(dartCode);
-  if (fontMatch != null) {
-    final fallbackMatches = RegExp(
-      r'GoogleFonts\.(\w+)\(\)\.fontFamily',
-    ).allMatches(dartCode);
-    final fallbacks = fallbackMatches.map((m) => m.group(1)).toSet().toList();
-    if (fallbacks.isNotEmpty) {
+  if (config.fontMode == 'local' && googleFonts.isNotEmpty) {
+    final primary = googleFonts.first;
+    if (googleFonts.length > 1) {
       stdout.writeln(
-        '  Font: ${fontMatch.group(1)} (google_fonts) → fallback: ${fallbacks.join(', ')}',
+        '  Font: $primary (local) → fallback: ${googleFonts.skip(1).join(', ')}',
       );
     } else {
-      stdout.writeln('  Font: ${fontMatch.group(1)} (google_fonts)');
+      stdout.writeln('  Font: $primary (local)');
     }
-  } else if (themeData.light.fontSans != null) {
-    stdout.writeln('  Font: system default');
+  } else {
+    final fontMatch = RegExp(
+      r'GoogleFonts\.(\w+)TextTheme',
+    ).firstMatch(dartCode);
+    if (fontMatch != null) {
+      final fallbackMatches = RegExp(
+        r'GoogleFonts\.(\w+)\(\)\.fontFamily',
+      ).allMatches(dartCode);
+      final fallbacks = fallbackMatches.map((m) => m.group(1)).toSet().toList();
+      if (fallbacks.isNotEmpty) {
+        stdout.writeln(
+          '  Font: ${fontMatch.group(1)} (google_fonts) → fallback: ${fallbacks.join(', ')}',
+        );
+      } else {
+        stdout.writeln('  Font: ${fontMatch.group(1)} (google_fonts)');
+      }
+    } else if (themeData.light.fontSans != null) {
+      stdout.writeln('  Font: system default');
+    }
   }
+
+  stdout.writeln('  Font mode: ${config.fontMode}');
 }

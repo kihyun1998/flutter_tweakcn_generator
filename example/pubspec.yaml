@@ -22,6 +22,32 @@ dev_dependencies:
 flutter_tweakcn_generator:
   input: tweakcn.css
   output: lib/theme/tweakcn_theme.g.dart
+  font_mode: local
 
 flutter:
+  fonts:
+    - family: Architects Daughter
+      fonts:
+        - asset: fonts/ArchitectsDaughter-Regular.ttf
+          weight: 400
+    - family: Noto Sans KR
+      fonts:
+        - asset: fonts/NotoSansKR-Thin.ttf
+          weight: 100
+        - asset: fonts/NotoSansKR-ExtraLight.ttf
+          weight: 200
+        - asset: fonts/NotoSansKR-Light.ttf
+          weight: 300
+        - asset: fonts/NotoSansKR-Regular.ttf
+          weight: 400
+        - asset: fonts/NotoSansKR-Medium.ttf
+          weight: 500
+        - asset: fonts/NotoSansKR-SemiBold.ttf
+          weight: 600
+        - asset: fonts/NotoSansKR-Bold.ttf
+          weight: 700
+        - asset: fonts/NotoSansKR-ExtraBold.ttf
+          weight: 800
+        - asset: fonts/NotoSansKR-Black.ttf
+          weight: 900
   uses-material-design: true

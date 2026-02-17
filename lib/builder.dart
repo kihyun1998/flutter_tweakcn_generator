@@ -14,5 +14,6 @@ import 'src/builder/tweakcn_builder.dart';
 /// ```
 Builder tweakcnBuilder(BuilderOptions options) {
   final classPrefix = options.config['class_prefix'] as String? ?? 'Tweakcn';
-  return TweakcnBuilder(classPrefix: classPrefix);
+  final fontMode = options.config['font_mode'] as String? ?? 'google_fonts';
+  return TweakcnBuilder(classPrefix: classPrefix, fontMode: fontMode);
 }

@@ -300,4 +300,135 @@ void main() {
       expect(generatedCode, contains('onSurface: Color(0xFF0A0A0A)'));
     });
   });
+
+  group('DartThemeGenerator (fontMode: local)', () {
+    test('does not generate google_fonts import in local mode', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: 'Inter', sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData, fontMode: 'local');
+      final code = generator.generate();
+
+      expect(code, isNot(contains('google_fonts')));
+      expect(code, isNot(contains('GoogleFonts')));
+      expect(code, isNot(contains('textTheme:')));
+    });
+
+    test('generates fontFamily for single font in local mode', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: 'Inter', sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData, fontMode: 'local');
+      final code = generator.generate();
+
+      expect(code, contains("fontFamily: 'Inter'"));
+      expect(code, isNot(contains('fontFamilyFallback')));
+    });
+
+    test(
+      'generates fontFamily and fontFamilyFallback for multiple fonts in local mode',
+      () {
+        final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: 'Architects Daughter', 'Noto Sans KR', sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+        final themeData = CssParser.parse(css);
+        final generator = DartThemeGenerator(themeData, fontMode: 'local');
+        final code = generator.generate();
+
+        expect(code, contains("fontFamily: 'Architects Daughter'"));
+        expect(code, contains("fontFamilyFallback: ['Noto Sans KR']"));
+        expect(code, isNot(contains('google_fonts')));
+      },
+    );
+
+    test('generates multiple fallback fonts in local mode', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: 'Inter', 'Noto Sans KR', 'Noto Sans JP', sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData, fontMode: 'local');
+      final code = generator.generate();
+
+      expect(code, contains("fontFamily: 'Inter'"));
+      expect(
+        code,
+        contains("fontFamilyFallback: ['Noto Sans KR', 'Noto Sans JP']"),
+      );
+    });
+
+    test('does not generate font code for system fonts in local mode', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData, fontMode: 'local');
+      final code = generator.generate();
+
+      expect(code, isNot(contains('fontFamily')));
+      expect(code, isNot(contains('google_fonts')));
+    });
+
+    test('fontFamily appears in both light and dark ThemeData', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: 'Inter', sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData, fontMode: 'local');
+      final code = generator.generate();
+
+      // fontFamily should appear twice (once in light, once in dark)
+      final matches = "fontFamily: 'Inter'".allMatches(code).length;
+      expect(matches, equals(2));
+    });
+  });
 }

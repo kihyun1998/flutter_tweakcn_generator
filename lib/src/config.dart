@@ -13,10 +13,15 @@ class TweakcnConfig {
   /// Class name prefix for generated classes.
   final String classPrefix;
 
+  /// Font mode: `'google_fonts'` uses the google_fonts package at runtime,
+  /// `'local'` downloads .ttf files and uses `fontFamily` directly.
+  final String fontMode;
+
   const TweakcnConfig({
     required this.input,
     required this.output,
     this.classPrefix = 'Tweakcn',
+    this.fontMode = 'google_fonts',
   });
 
   /// Reads configuration from pubspec.yaml in the given [projectDir].
@@ -46,6 +51,7 @@ class TweakcnConfig {
       input: config?['input'] as String? ?? 'tweakcn.css',
       output: config?['output'] as String? ?? 'lib/theme/tweakcn_theme.g.dart',
       classPrefix: config?['class_prefix'] as String? ?? 'Tweakcn',
+      fontMode: config?['font_mode'] as String? ?? 'google_fonts',
     );
   }
 }
