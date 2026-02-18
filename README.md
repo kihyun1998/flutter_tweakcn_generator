@@ -20,7 +20,7 @@ A code generator that converts [tweakcn](https://tweakcn.com) CSS themes into Fl
 ```yaml
 # pubspec.yaml
 dev_dependencies:
-  flutter_tweakcn_generator: ^0.2.0
+  flutter_tweakcn_generator: ^0.2.2
   
 
 ### 2. Prepare CSS
@@ -95,7 +95,10 @@ flutter_tweakcn_generator:
   output: lib/theme/tweakcn_theme.g.dart    # output path (default)
   class_prefix: Tweakcn                     # class name prefix (default)
   font_mode: google_fonts                   # google_fonts (default) | local
+  font_exclusive: false                     # auto-clean unused fonts (default: false, local mode only)
 ```
+
+When `font_exclusive: true` is set with `font_mode: local`, fonts in the `fonts/` directory that are no longer referenced by `--font-sans` are automatically deleted, and their `flutter > fonts` declarations are removed from `pubspec.yaml`. Useful when switching fonts to keep the project clean.
 
 Changing `class_prefix` renames the generated classes:
 
@@ -113,6 +116,18 @@ Use the `*.tweakcn.css` extension to generate via build_runner:
 
 ```bash
 dart run build_runner build
+```
+
+Configure builder options in `build.yaml`:
+
+```yaml
+targets:
+  $default:
+    builders:
+      flutter_tweakcn_generator|tweakcn:
+        options:
+          class_prefix: Tweakcn       # class name prefix (default)
+          font_mode: google_fonts     # google_fonts (default) | local
 ```
 
 ## Generated Code

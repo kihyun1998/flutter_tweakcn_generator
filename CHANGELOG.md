@@ -1,3 +1,8 @@
+## 0.2.2
+
+- Fix `font_exclusive` not cleaning up fonts when switching to system font stack
+- Add missing `font_exclusive` and `build.yaml` options to README
+
 ## 0.2.1
 
 - Add `font_exclusive: true` option for `font_mode: local`: automatically removes font files and `pubspec.yaml` font declarations not defined in `--font-sans`

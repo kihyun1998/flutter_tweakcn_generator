@@ -309,6 +309,36 @@ flutter:
       expect(result, contains('- images/'));
     });
 
+    test(
+      'removes all families and fonts key when definedFamilies is empty',
+      () {
+        final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: fonts/Inter-Regular.ttf
+          weight: 400
+    - family: Noto Sans KR
+      fonts:
+        - asset: fonts/NotoSansKR-Regular.ttf
+          weight: 400
+''');
+
+        PubspecFontAdder.removeUndefinedFonts(path, []);
+        final result = readPubspec(path);
+
+        expect(result, isNot(contains('fonts:')));
+        expect(result, isNot(contains('Inter')));
+        expect(result, isNot(contains('Noto Sans KR')));
+        expect(result, contains('uses-material-design: true'));
+      },
+    );
+
     test('does nothing when no fonts section exists', () {
       final path = createPubspec('''
 name: my_app

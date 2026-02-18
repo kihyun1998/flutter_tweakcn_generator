@@ -70,6 +70,16 @@ void main() {
       FontCleanup.cleanFontsDirectory(nonExistent, ['Inter']);
     });
 
+    test('removes all fonts when definedFamilies is empty', () {
+      createFont('Inter-Regular.ttf');
+      createFont('Inter-Bold.ttf');
+      createFont('NotoSansKR-Regular.ttf');
+
+      FontCleanup.cleanFontsDirectory(fontsDir, []);
+
+      expect(Directory(fontsDir).existsSync(), isFalse);
+    });
+
     test('ignores non-ttf files', () {
       createFont('Inter-Regular.ttf');
       File('$fontsDir/README.md').writeAsStringSync('hello');
