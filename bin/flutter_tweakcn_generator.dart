@@ -52,12 +52,16 @@ Future<void> main(List<String> args) async {
 
   if (config.fontMode == 'local' && googleFonts.isNotEmpty) {
     // Local mode: download .ttf files and update pubspec.yaml
-    final fontsDir = p.join(projectDir, 'fonts');
+    final fontsDir = p.join(projectDir, config.fontDir);
     final allDownloaded = <DownloadedFont>[];
 
     for (final fontName in googleFonts) {
       stdout.writeln('Downloading font: $fontName');
-      final downloaded = await FontDownloader.download(fontName, fontsDir);
+      final downloaded = await FontDownloader.download(
+        fontName,
+        fontsDir,
+        relativeDir: config.fontDir,
+      );
       allDownloaded.addAll(downloaded);
     }
 
@@ -89,7 +93,7 @@ Future<void> main(List<String> args) async {
 
   // font_exclusive: remove fonts not defined in --font-sans
   if (config.fontMode == 'local' && config.fontExclusive) {
-    final fontsDir = p.join(projectDir, 'fonts');
+    final fontsDir = p.join(projectDir, config.fontDir);
     final pubspecPath = p.join(projectDir, 'pubspec.yaml');
     stdout.writeln('Font exclusive mode: cleaning up unused fonts...');
     FontCleanup.cleanFontsDirectory(fontsDir, googleFonts);

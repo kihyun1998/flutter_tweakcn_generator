@@ -21,12 +21,16 @@ class TweakcnConfig {
   /// pubspec.yaml font declarations that are not defined in `--font-sans`.
   final bool fontExclusive;
 
+  /// Directory where local font .ttf files are stored (relative to project root).
+  final String fontDir;
+
   const TweakcnConfig({
     required this.input,
     required this.output,
     this.classPrefix = 'Tweakcn',
     this.fontMode = 'google_fonts',
     this.fontExclusive = false,
+    this.fontDir = 'fonts',
   });
 
   /// Reads configuration from pubspec.yaml in the given [projectDir].
@@ -58,6 +62,7 @@ class TweakcnConfig {
       classPrefix: config?['class_prefix'] as String? ?? 'Tweakcn',
       fontMode: config?['font_mode'] as String? ?? 'google_fonts',
       fontExclusive: config?['font_exclusive'] as bool? ?? false,
+      fontDir: config?['font_dir'] as String? ?? 'fonts',
     );
   }
 }

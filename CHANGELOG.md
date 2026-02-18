@@ -1,3 +1,7 @@
+## 0.2.3
+
+- Add `font_dir` option to customize local font download directory (default: `fonts`)
+
 ## 0.2.2
 
 - Fix `font_exclusive` not cleaning up fonts when switching to system font stack
