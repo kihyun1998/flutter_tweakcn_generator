@@ -17,11 +17,16 @@ class TweakcnConfig {
   /// `'local'` downloads .ttf files and uses `fontFamily` directly.
   final String fontMode;
 
+  /// When `true` and [fontMode] is `'local'`, removes font files and
+  /// pubspec.yaml font declarations that are not defined in `--font-sans`.
+  final bool fontExclusive;
+
   const TweakcnConfig({
     required this.input,
     required this.output,
     this.classPrefix = 'Tweakcn',
     this.fontMode = 'google_fonts',
+    this.fontExclusive = false,
   });
 
   /// Reads configuration from pubspec.yaml in the given [projectDir].
@@ -52,6 +57,7 @@ class TweakcnConfig {
       output: config?['output'] as String? ?? 'lib/theme/tweakcn_theme.g.dart',
       classPrefix: config?['class_prefix'] as String? ?? 'Tweakcn',
       fontMode: config?['font_mode'] as String? ?? 'google_fonts',
+      fontExclusive: config?['font_exclusive'] as bool? ?? false,
     );
   }
 }

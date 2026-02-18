@@ -2,7 +2,7 @@ name: flutter_tweakcn_generator
 description: >-
   Converts tweakcn CSS themes into Flutter ThemeData with ColorScheme,
   ThemeExtension, Google Fonts, and light/dark mode support.
-version: 0.2.0
+version: 0.2.1
 repository: https://github.com/kihyun1998/flutter_tweakcn_generator
 topics:
   - theme

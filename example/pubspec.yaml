@@ -23,31 +23,28 @@ flutter_tweakcn_generator:
   input: tweakcn.css
   output: lib/theme/tweakcn_theme.g.dart
   font_mode: local
+  font_exclusive: true
 
 flutter:
   fonts:
-    - family: Architects Daughter
+    - family: Roboto
       fonts:
-        - asset: fonts/ArchitectsDaughter-Regular.ttf
-          weight: 400
-    - family: Noto Sans KR
-      fonts:
-        - asset: fonts/NotoSansKR-Thin.ttf
+        - asset: fonts/Roboto-Thin.ttf
           weight: 100
-        - asset: fonts/NotoSansKR-ExtraLight.ttf
+        - asset: fonts/Roboto-ExtraLight.ttf
           weight: 200
-        - asset: fonts/NotoSansKR-Light.ttf
+        - asset: fonts/Roboto-Light.ttf
           weight: 300
-        - asset: fonts/NotoSansKR-Regular.ttf
+        - asset: fonts/Roboto-Regular.ttf
           weight: 400
-        - asset: fonts/NotoSansKR-Medium.ttf
+        - asset: fonts/Roboto-Medium.ttf
           weight: 500
-        - asset: fonts/NotoSansKR-SemiBold.ttf
+        - asset: fonts/Roboto-SemiBold.ttf
           weight: 600
-        - asset: fonts/NotoSansKR-Bold.ttf
+        - asset: fonts/Roboto-Bold.ttf
           weight: 700
-        - asset: fonts/NotoSansKR-ExtraBold.ttf
+        - asset: fonts/Roboto-ExtraBold.ttf
           weight: 800
-        - asset: fonts/NotoSansKR-Black.ttf
+        - asset: fonts/Roboto-Black.ttf
           weight: 900
   uses-material-design: true

@@ -53,6 +53,131 @@ class PubspecFontAdder {
     file.writeAsStringSync(content);
   }
 
+  /// Removes font family blocks from pubspec.yaml that are not in
+  /// [definedFamilies].
+  ///
+  /// If all families are removed, the `fonts:` key is also removed.
+  static void removeUndefinedFonts(
+    String pubspecPath,
+    List<String> definedFamilies,
+  ) {
+    final file = File(pubspecPath);
+    if (!file.existsSync()) return;
+
+    final lines = file.readAsStringSync().split('\n');
+    final result = <String>[];
+
+    // Find the `  fonts:` line inside the flutter section
+    var inFlutter = false;
+    var inFonts = false;
+    var currentBlock = <String>[];
+    String? currentFamily;
+    var fontsLineIndex = -1;
+    var keptFamilies = 0;
+
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+
+      // Detect top-level flutter: section
+      if (RegExp(r'^flutter:\s*$').hasMatch(line)) {
+        inFlutter = true;
+        result.add(line);
+        continue;
+      }
+
+      // Detect leaving flutter section (another top-level key)
+      if (inFlutter && RegExp(r'^\S').hasMatch(line) && line.isNotEmpty) {
+        // Flush any pending block before leaving
+        if (inFonts && currentBlock.isNotEmpty) {
+          if (currentFamily != null &&
+              definedFamilies.contains(currentFamily)) {
+            result.addAll(currentBlock);
+            keptFamilies++;
+          }
+          currentBlock = [];
+          currentFamily = null;
+        }
+        inFlutter = false;
+        inFonts = false;
+      }
+
+      if (!inFlutter) {
+        result.add(line);
+        continue;
+      }
+
+      // Detect `  fonts:` inside flutter
+      if (RegExp(r'^  fonts:\s*$').hasMatch(line)) {
+        inFonts = true;
+        fontsLineIndex = result.length;
+        result.add(line);
+        continue;
+      }
+
+      if (!inFonts) {
+        result.add(line);
+        continue;
+      }
+
+      // Detect end of fonts section (another flutter sub-key at indent 2)
+      if (RegExp(r'^  \S').hasMatch(line) &&
+          !line.trimLeft().startsWith('-') &&
+          !line.trimLeft().startsWith('fonts:')) {
+        // Flush pending block
+        if (currentBlock.isNotEmpty) {
+          if (currentFamily != null &&
+              definedFamilies.contains(currentFamily)) {
+            result.addAll(currentBlock);
+            keptFamilies++;
+          }
+          currentBlock = [];
+          currentFamily = null;
+        }
+        inFonts = false;
+        result.add(line);
+        continue;
+      }
+
+      // Detect `    - family: XXX`
+      final familyMatch = RegExp(r'^    - family:\s*(.+)$').firstMatch(line);
+      if (familyMatch != null) {
+        // Flush previous block
+        if (currentBlock.isNotEmpty) {
+          if (currentFamily != null &&
+              definedFamilies.contains(currentFamily)) {
+            result.addAll(currentBlock);
+            keptFamilies++;
+          }
+        }
+        currentBlock = [line];
+        currentFamily = familyMatch.group(1)!.trim();
+        continue;
+      }
+
+      // Accumulate lines into the current family block
+      if (currentFamily != null) {
+        currentBlock.add(line);
+      } else {
+        result.add(line);
+      }
+    }
+
+    // Flush any remaining block
+    if (currentBlock.isNotEmpty) {
+      if (currentFamily != null && definedFamilies.contains(currentFamily)) {
+        result.addAll(currentBlock);
+        keptFamilies++;
+      }
+    }
+
+    // Remove the `  fonts:` line if no families remain
+    if (keptFamilies == 0 && fontsLineIndex >= 0) {
+      result.removeAt(fontsLineIndex);
+    }
+
+    file.writeAsStringSync(result.join('\n'));
+  }
+
   /// Inserts [fontsYaml] into the pubspec content at the right location.
   static String _insertFontsSection(String content, String fontsYaml) {
     // Case 1: flutter section with fonts already exists → append

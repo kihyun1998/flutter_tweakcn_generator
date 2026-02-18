@@ -1,3 +1,9 @@
+## 0.2.1
+
+- Add `font_exclusive: true` option for `font_mode: local`: automatically removes font files and `pubspec.yaml` font declarations not defined in `--font-sans`
+- Auto-clean `fonts/` directory: deletes `.ttf` files that don't belong to any defined font family
+- Auto-clean `pubspec.yaml`: removes unused `flutter > fonts` family blocks
+
 ## 0.2.0
 
 - Add `font_mode: local` option: downloads `.ttf` files from Google Fonts and generates `fontFamily` / `fontFamilyFallback` code without `google_fonts` runtime dependency

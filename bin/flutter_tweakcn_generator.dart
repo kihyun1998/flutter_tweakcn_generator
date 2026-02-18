@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_tweakcn_generator/src/config.dart';
+import 'package:flutter_tweakcn_generator/src/font/font_cleanup.dart';
 import 'package:flutter_tweakcn_generator/src/font/font_downloader.dart';
 import 'package:flutter_tweakcn_generator/src/font/pubspec_font_adder.dart';
 import 'package:flutter_tweakcn_generator/src/generator/dart_theme_generator.dart';
@@ -64,6 +65,15 @@ Future<void> main(List<String> args) async {
       final pubspecPath = p.join(projectDir, 'pubspec.yaml');
       PubspecFontAdder.addFonts(pubspecPath, allDownloaded);
       stdout.writeln('Updated pubspec.yaml with font declarations');
+    }
+
+    // font_exclusive: remove fonts not defined in --font-sans
+    if (config.fontExclusive) {
+      stdout.writeln('Font exclusive mode: cleaning up unused fonts...');
+      FontCleanup.cleanFontsDirectory(fontsDir, googleFonts);
+      final pubspecPath = p.join(projectDir, 'pubspec.yaml');
+      PubspecFontAdder.removeUndefinedFonts(pubspecPath, googleFonts);
+      stdout.writeln('Font cleanup complete');
     }
   } else if (dartCode.contains("package:google_fonts/google_fonts.dart")) {
     // Google Fonts mode: auto-add dependency

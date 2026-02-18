@@ -211,4 +211,145 @@ version: 1.0.0
       expect(regularIndex, lessThan(boldIndex));
     });
   });
+
+  group('PubspecFontAdder.removeUndefinedFonts', () {
+    test('removes undefined font families', () {
+      final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+flutter:
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: fonts/Inter-Regular.ttf
+          weight: 400
+    - family: Roboto
+      fonts:
+        - asset: fonts/Roboto-Regular.ttf
+          weight: 400
+''');
+
+      PubspecFontAdder.removeUndefinedFonts(path, ['Inter']);
+      final result = readPubspec(path);
+
+      expect(result, contains('family: Inter'));
+      expect(result, isNot(contains('family: Roboto')));
+      expect(result, isNot(contains('Roboto-Regular.ttf')));
+    });
+
+    test('keeps all defined families', () {
+      final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+flutter:
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: fonts/Inter-Regular.ttf
+          weight: 400
+    - family: Noto Sans KR
+      fonts:
+        - asset: fonts/NotoSansKR-Regular.ttf
+          weight: 400
+''');
+
+      PubspecFontAdder.removeUndefinedFonts(path, ['Inter', 'Noto Sans KR']);
+      final result = readPubspec(path);
+
+      expect(result, contains('family: Inter'));
+      expect(result, contains('family: Noto Sans KR'));
+    });
+
+    test('removes fonts key when all families removed', () {
+      final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: fonts/Roboto-Regular.ttf
+          weight: 400
+''');
+
+      PubspecFontAdder.removeUndefinedFonts(path, ['Inter']);
+      final result = readPubspec(path);
+
+      expect(result, isNot(contains('fonts:')));
+      expect(result, isNot(contains('Roboto')));
+      expect(result, contains('uses-material-design: true'));
+    });
+
+    test('preserves other flutter keys', () {
+      final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: fonts/Inter-Regular.ttf
+          weight: 400
+  assets:
+    - images/
+''');
+
+      PubspecFontAdder.removeUndefinedFonts(path, ['Inter']);
+      final result = readPubspec(path);
+
+      expect(result, contains('uses-material-design: true'));
+      expect(result, contains('family: Inter'));
+      expect(result, contains('assets:'));
+      expect(result, contains('- images/'));
+    });
+
+    test('does nothing when no fonts section exists', () {
+      final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+flutter:
+  uses-material-design: true
+''');
+      final original = readPubspec(path);
+
+      PubspecFontAdder.removeUndefinedFonts(path, ['Inter']);
+      final result = readPubspec(path);
+
+      expect(result, equals(original));
+    });
+
+    test('handles multiple weight entries in a family block', () {
+      final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+flutter:
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: fonts/Inter-Bold.ttf
+          weight: 700
+    - family: Roboto
+      fonts:
+        - asset: fonts/Roboto-Regular.ttf
+          weight: 400
+''');
+
+      PubspecFontAdder.removeUndefinedFonts(path, ['Inter']);
+      final result = readPubspec(path);
+
+      expect(result, contains('Inter-Regular.ttf'));
+      expect(result, contains('Inter-Bold.ttf'));
+      expect(result, isNot(contains('Roboto')));
+    });
+  });
 }
