@@ -42,9 +42,7 @@ class CustomFontScanner {
   }) {
     final dir = Directory(fontsDir);
     if (!dir.existsSync()) {
-      stderr.writeln(
-        '  Warning: Font directory not found: $fontsDir',
-      );
+      stderr.writeln('  Warning: Font directory not found: $fontsDir');
       stderr.writeln(
         '  Please create the directory and place .ttf files for "$fontName".',
       );
@@ -91,10 +89,7 @@ class CustomFontScanner {
   /// Falls back to 400 (Regular) if no suffix matches.
   static int _inferWeight(String fileName, String sanitizedFamily) {
     // Strip extension and family prefix: "MyFont-Bold.ttf" → "Bold" or "-Bold"
-    final stem = fileName.substring(
-      0,
-      fileName.length - 4,
-    ); // remove .ttf
+    final stem = fileName.substring(0, fileName.length - 4); // remove .ttf
     var suffix = stem.substring(sanitizedFamily.length); // remove family prefix
     // Strip leading dash or underscore.
     if (suffix.startsWith('-') || suffix.startsWith('_')) {
