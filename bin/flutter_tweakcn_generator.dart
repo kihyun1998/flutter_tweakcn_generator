@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_tweakcn_generator/src/config.dart';
 import 'package:flutter_tweakcn_generator/src/font/font_cleanup.dart';
+import 'package:flutter_tweakcn_generator/src/font/custom_font_scanner.dart';
 import 'package:flutter_tweakcn_generator/src/font/font_downloader.dart';
 import 'package:flutter_tweakcn_generator/src/font/pubspec_font_adder.dart';
 import 'package:flutter_tweakcn_generator/src/generator/dart_theme_generator.dart';
@@ -50,7 +51,27 @@ Future<void> main(List<String> args) async {
     themeData.light.fontSans,
   );
 
-  if (config.fontMode == 'local' && googleFonts.isNotEmpty) {
+  if (config.fontMode == 'custom' && googleFonts.isNotEmpty) {
+    // Custom mode: scan local .ttf files provided by the user
+    final fontsDir = p.join(projectDir, config.fontDir);
+    final allFound = <DownloadedFont>[];
+
+    for (final fontName in googleFonts) {
+      stdout.writeln('Scanning for custom font: $fontName');
+      final found = CustomFontScanner.scan(
+        fontName,
+        fontsDir,
+        relativeDir: config.fontDir,
+      );
+      allFound.addAll(found);
+    }
+
+    if (allFound.isNotEmpty) {
+      final pubspecPath = p.join(projectDir, 'pubspec.yaml');
+      PubspecFontAdder.addFonts(pubspecPath, allFound);
+      stdout.writeln('Updated pubspec.yaml with custom font declarations');
+    }
+  } else if (config.fontMode == 'local' && googleFonts.isNotEmpty) {
     // Local mode: download .ttf files and update pubspec.yaml
     final fontsDir = p.join(projectDir, config.fontDir);
     final allDownloaded = <DownloadedFont>[];
@@ -92,7 +113,8 @@ Future<void> main(List<String> args) async {
   }
 
   // font_exclusive: remove fonts not defined in --font-sans
-  if (config.fontMode == 'local' && config.fontExclusive) {
+  if ((config.fontMode == 'local' || config.fontMode == 'custom') &&
+      config.fontExclusive) {
     final fontsDir = p.join(projectDir, config.fontDir);
     final pubspecPath = p.join(projectDir, 'pubspec.yaml');
     stdout.writeln('Font exclusive mode: cleaning up unused fonts...');
@@ -115,14 +137,16 @@ Future<void> main(List<String> args) async {
     '  Radius: ${themeData.light.radius ?? themeData.dark.radius ?? "default"}',
   );
 
-  if (config.fontMode == 'local' && googleFonts.isNotEmpty) {
+  if ((config.fontMode == 'local' || config.fontMode == 'custom') &&
+      googleFonts.isNotEmpty) {
     final primary = googleFonts.first;
+    final modeLabel = config.fontMode;
     if (googleFonts.length > 1) {
       stdout.writeln(
-        '  Font: $primary (local) → fallback: ${googleFonts.skip(1).join(', ')}',
+        '  Font: $primary ($modeLabel) → fallback: ${googleFonts.skip(1).join(', ')}',
       );
     } else {
-      stdout.writeln('  Font: $primary (local)');
+      stdout.writeln('  Font: $primary ($modeLabel)');
     }
   } else {
     final fontMatch = RegExp(

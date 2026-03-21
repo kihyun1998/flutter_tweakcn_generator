@@ -13,8 +13,11 @@ class TweakcnConfig {
   /// Class name prefix for generated classes.
   final String classPrefix;
 
-  /// Font mode: `'google_fonts'` uses the google_fonts package at runtime,
-  /// `'local'` downloads .ttf files and uses `fontFamily` directly.
+  /// Font mode:
+  /// - `'google_fonts'` uses the google_fonts package at runtime.
+  /// - `'local'` downloads .ttf files from Google Fonts and uses `fontFamily`.
+  /// - `'custom'` uses user-provided .ttf files from [fontDir] without
+  ///   downloading from Google Fonts.
   final String fontMode;
 
   /// When `true` and [fontMode] is `'local'`, removes font files and

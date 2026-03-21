@@ -431,4 +431,88 @@ void main() {
       expect(matches, equals(2));
     });
   });
+
+  group('DartThemeGenerator (fontMode: custom)', () {
+    test('does not generate google_fonts import in custom mode', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: 'My Custom Font', sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData, fontMode: 'custom');
+      final code = generator.generate();
+
+      expect(code, isNot(contains('google_fonts')));
+      expect(code, isNot(contains('GoogleFonts')));
+      expect(code, isNot(contains('textTheme:')));
+    });
+
+    test('generates fontFamily for single font in custom mode', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: 'My Custom Font', sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData, fontMode: 'custom');
+      final code = generator.generate();
+
+      expect(code, contains("fontFamily: 'My Custom Font'"));
+      expect(code, isNot(contains('fontFamilyFallback')));
+    });
+
+    test('generates fontFamily and fontFamilyFallback for multiple fonts', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: 'My Custom Font', 'Noto Sans KR', sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData, fontMode: 'custom');
+      final code = generator.generate();
+
+      expect(code, contains("fontFamily: 'My Custom Font'"));
+      expect(code, contains("fontFamilyFallback: ['Noto Sans KR']"));
+      expect(code, isNot(contains('google_fonts')));
+    });
+
+    test('fontFamily appears in both light and dark ThemeData', () {
+      final css = '''
+:root {
+  --background: #ffffff;
+  --foreground: #000000;
+  --font-sans: 'My Custom Font', sans-serif;
+}
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+''';
+      final themeData = CssParser.parse(css);
+      final generator = DartThemeGenerator(themeData, fontMode: 'custom');
+      final code = generator.generate();
+
+      final matches = "fontFamily: 'My Custom Font'".allMatches(code).length;
+      expect(matches, equals(2));
+    });
+  });
 }

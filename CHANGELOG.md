@@ -1,3 +1,9 @@
+## 0.3.0
+
+- Add `font_mode: custom` for user-provided `.ttf` files not available on Google Fonts
+- Auto-scan font directory and infer font weights from file names (e.g. `MyFont-Bold.ttf` → weight 700)
+- `font_exclusive` cleanup now supports `custom` mode
+
 ## 0.2.3
 
 - Add `font_dir` option to customize local font download directory (default: `fonts`)

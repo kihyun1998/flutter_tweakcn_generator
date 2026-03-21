@@ -10,6 +10,7 @@ A code generator that converts [tweakcn](https://tweakcn.com) CSS themes into Fl
 - **ThemeExtension** generation: Colors, Radius, Shadows
 - **Google Fonts**: auto-detects `--font-sans` and generates `GoogleFonts.xxxTextTheme()` with `fontFamilyFallback` support
 - **Local Fonts**: `font_mode: local` downloads `.ttf` files at build time and uses `fontFamily` directly (no runtime dependency)
+- **Custom Fonts**: `font_mode: custom` uses user-provided `.ttf` files for fonts not available on Google Fonts
 - **BuildContext extensions**: `context.tweakcnColors`, `context.tweakcnRadius`, `context.tweakcnShadows`
 - **CLI** and **build_runner** support
 
@@ -20,7 +21,7 @@ A code generator that converts [tweakcn](https://tweakcn.com) CSS themes into Fl
 ```yaml
 # pubspec.yaml
 dev_dependencies:
-  flutter_tweakcn_generator: ^0.2.3
+  flutter_tweakcn_generator: ^0.3.0
   
 
 ### 2. Prepare CSS
@@ -94,7 +95,7 @@ flutter_tweakcn_generator:
   input: tweakcn.css                        # CSS file path (default)
   output: lib/theme/tweakcn_theme.g.dart    # output path (default)
   class_prefix: Tweakcn                     # class name prefix (default)
-  font_mode: google_fonts                   # google_fonts (default) | local
+  font_mode: google_fonts                   # google_fonts (default) | local | custom
   font_dir: fonts                           # local font directory (default: fonts)
   font_exclusive: false                     # auto-clean unused fonts (default: false, local mode only)
 ```
@@ -128,7 +129,7 @@ targets:
       flutter_tweakcn_generator|tweakcn:
         options:
           class_prefix: Tweakcn       # class name prefix (default)
-          font_mode: google_fonts     # google_fonts (default) | local
+          font_mode: google_fonts     # google_fonts (default) | local | custom
 ```
 
 ## Generated Code
@@ -219,6 +220,35 @@ static ThemeData get light => ThemeData(
 ```
 
 This is useful when you want to avoid runtime font downloads or need to work offline.
+
+### Custom Fonts
+
+Set `font_mode: custom` to use your own `.ttf` files that are not available on Google Fonts:
+
+```yaml
+flutter_tweakcn_generator:
+  font_mode: custom
+  font_dir: fonts   # directory containing your .ttf files
+```
+
+Place your `.ttf` files in the `fonts/` directory with the naming convention `{FontName}-{Weight}.ttf`:
+
+```
+fonts/
+  MyCustomFont-Regular.ttf
+  MyCustomFont-Bold.ttf
+  MyCustomFont-Light.ttf
+```
+
+Supported weight suffixes: `Thin` (100), `ExtraLight` (200), `Light` (300), `Regular` (400), `Medium` (500), `SemiBold` (600), `Bold` (700), `ExtraBold` (800), `Black` (900).
+
+When you run `dart run flutter_tweakcn_generator`:
+
+1. `.ttf` files matching the `--font-sans` font name are scanned from the `fonts/` directory
+2. `pubspec.yaml` is updated with `flutter > fonts` declarations (with auto-detected weights)
+3. Generated code uses `fontFamily` / `fontFamilyFallback` (same as `local` mode)
+
+If no matching `.ttf` files are found, a warning is printed and font registration is skipped.
 
 ## Platform Setup (Google Fonts)
 
