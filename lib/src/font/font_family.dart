@@ -1,3 +1,5 @@
+import 'pubspec_font_declarations.dart';
+
 /// A font family name, and the rules for recognizing it wherever it is
 /// written.
 ///
@@ -20,11 +22,27 @@ class FontFamily {
 
   /// Whether [fileName] is a font file this package manages, whatever family
   /// it belongs to.
-  static bool isFontFile(String fileName) => fileName.endsWith(extension);
+  ///
+  /// The extension is matched case-insensitively: a `.TTF` file is as much a
+  /// font as a `.ttf` one.
+  static bool isFontFile(String fileName) =>
+      fileName.toLowerCase().endsWith(extension);
 
-  /// Whether [fileName] is a font file belonging to this family.
+  /// Whether [fileName] could be a font file of this family.
+  ///
+  /// Case is ignored, so a hand-named `inter-bold.ttf` is recognized as
+  /// `Inter`'s rather than treated as an unknown family's.
+  ///
+  /// This is a guess from the name, and a deliberately generous one: it claims
+  /// `InterVariable.ttf` and `Inter24pt-Bold.ttf` for `Inter`, and it also
+  /// claims `RobotoSlab-Bold.ttf` for `Roboto`, which is wrong. Nothing in a
+  /// file name distinguishes those two cases. Where being wrong costs
+  /// something — deciding what to delete — ask
+  /// [PubspecFontDeclarations.familyOf] first and fall back to this only for
+  /// files pubspec has never heard of.
   bool ownsFile(String fileName) =>
-      isFontFile(fileName) && fileName.startsWith(fileNamePrefix);
+      isFontFile(fileName) &&
+      fileName.toLowerCase().startsWith(fileNamePrefix.toLowerCase());
 
   /// The weight portion of [fileName], with the family prefix and any
   /// separator removed: `NotoSansKR-Bold.ttf` → `Bold`.

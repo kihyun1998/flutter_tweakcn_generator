@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_tweakcn_generator/src/font/font_cleanup.dart';
+import 'package:flutter_tweakcn_generator/src/font/pubspec_font_declarations.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -112,6 +113,101 @@ void main() {
 
       expect(File('$fontsDir/Inter-Regular.ttf').existsSync(), isTrue);
       expect(File('$fontsDir/README.md').existsSync(), isTrue);
+    });
+
+    test('removes a declared family that is no longer defined', () {
+      createFont('Roboto-Regular.ttf');
+      createFont('RobotoSlab-Bold.ttf');
+      createFont('RobotoSlab.ttf');
+
+      // pubspec still records which family each file was declared under.
+      final declarations = PubspecFontDeclarations.parse('''
+flutter:
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: fonts/Roboto-Regular.ttf
+    - family: Roboto Slab
+      fonts:
+        - asset: fonts/RobotoSlab-Bold.ttf
+        - asset: fonts/RobotoSlab.ttf
+''');
+
+      FontCleanup.cleanFontsDirectory(fontsDir, [
+        'Roboto',
+      ], declarations: declarations);
+
+      expect(File('$fontsDir/Roboto-Regular.ttf').existsSync(), isTrue);
+      expect(File('$fontsDir/RobotoSlab-Bold.ttf').existsSync(), isFalse);
+      expect(File('$fontsDir/RobotoSlab.ttf').existsSync(), isFalse);
+    });
+
+    test('keeps a file the defined family declares, whatever its name', () {
+      createFont('InterVariable.ttf');
+      createFont('Inter24pt-Bold.ttf');
+
+      final declarations = PubspecFontDeclarations.parse('''
+flutter:
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: fonts/InterVariable.ttf
+        - asset: fonts/Inter24pt-Bold.ttf
+''');
+
+      FontCleanup.cleanFontsDirectory(fontsDir, [
+        'Inter',
+      ], declarations: declarations);
+
+      expect(File('$fontsDir/InterVariable.ttf').existsSync(), isTrue);
+      expect(File('$fontsDir/Inter24pt-Bold.ttf').existsSync(), isTrue);
+    });
+
+    test('keeps a file any one of its declarations defines', () {
+      createFont('NotoSansKR-Regular.ttf');
+
+      // The same asset listed under two spellings, the defined one first.
+      final declarations = PubspecFontDeclarations.parse('''
+flutter:
+  fonts:
+    - family: Noto Sans KR
+      fonts:
+        - asset: fonts/NotoSansKR-Regular.ttf
+    - family: NotoSansKR
+      fonts:
+        - asset: fonts/NotoSansKR-Regular.ttf
+''');
+
+      FontCleanup.cleanFontsDirectory(fontsDir, [
+        'Noto Sans KR',
+      ], declarations: declarations);
+
+      expect(File('$fontsDir/NotoSansKR-Regular.ttf').existsSync(), isTrue);
+    });
+
+    test('keeps an undeclared file that a defined family might own', () {
+      createFont('InterVariable.ttf');
+      createFont('Roboto[wdth,wght].ttf');
+
+      // pubspec has never heard of either file, so the name is all there is.
+      FontCleanup.cleanFontsDirectory(fontsDir, ['Inter']);
+
+      expect(File('$fontsDir/InterVariable.ttf').existsSync(), isTrue);
+      expect(File('$fontsDir/Roboto[wdth,wght].ttf').existsSync(), isFalse);
+    });
+
+    test('keeps files whose case differs from the family name', () {
+      createFont('inter-regular.ttf');
+      createFont('INTER-Bold.ttf');
+      createFont('Inter-Light.TTF');
+      createFont('roboto-regular.ttf');
+
+      FontCleanup.cleanFontsDirectory(fontsDir, ['Inter']);
+
+      expect(File('$fontsDir/inter-regular.ttf').existsSync(), isTrue);
+      expect(File('$fontsDir/INTER-Bold.ttf').existsSync(), isTrue);
+      expect(File('$fontsDir/Inter-Light.TTF').existsSync(), isTrue);
+      expect(File('$fontsDir/roboto-regular.ttf').existsSync(), isFalse);
     });
 
     test('handles multiple defined families', () {

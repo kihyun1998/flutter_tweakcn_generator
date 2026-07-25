@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_tweakcn_generator/src/font/custom_font_scanner.dart';
+import 'package:flutter_tweakcn_generator/src/font/pubspec_font_declarations.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -15,6 +16,54 @@ void main() {
       if (tempDir.existsSync()) {
         tempDir.deleteSync(recursive: true);
       }
+    });
+
+    test('finds hand-named files whose case differs', () {
+      File('${tempDir.path}/myfont-regular.ttf').writeAsStringSync('');
+      File('${tempDir.path}/MYFONT-Bold.TTF').writeAsStringSync('');
+
+      final results = CustomFontScanner.scan('My Font', tempDir.path);
+
+      expect(results, hasLength(2));
+      expect(results.map((f) => f.weight), containsAll([400, 700]));
+      // The path recorded is the file as it is actually named on disk.
+      expect(
+        results.map((f) => f.filePath),
+        containsAll(['fonts/myfont-regular.ttf', 'fonts/MYFONT-Bold.TTF']),
+      );
+    });
+
+    test('leaves a file pubspec declares under another family alone', () {
+      File('${tempDir.path}/Roboto-Regular.ttf').writeAsStringSync('');
+      File('${tempDir.path}/RobotoSlab-Bold.ttf').writeAsStringSync('');
+
+      // The name alone would claim RobotoSlab-Bold.ttf for Roboto. pubspec
+      // says otherwise, and claiming it would write that guess back as fact.
+      final results = CustomFontScanner.scan(
+        'Roboto',
+        tempDir.path,
+        declarations: PubspecFontDeclarations.parse('''
+flutter:
+  fonts:
+    - family: Roboto Slab
+      fonts:
+        - asset: fonts/RobotoSlab-Bold.ttf
+'''),
+      );
+
+      expect(results, hasLength(1));
+      expect(results.single.filePath, 'fonts/Roboto-Regular.ttf');
+    });
+
+    test('finds files that carry no weight separator', () {
+      // Real releases are named like this — Inter's own build, and the
+      // variable fonts fonts.google.com hands out.
+      File('${tempDir.path}/MyFontVariable.ttf').writeAsStringSync('');
+      File('${tempDir.path}/MyFont24pt-Bold.ttf').writeAsStringSync('');
+
+      final results = CustomFontScanner.scan('My Font', tempDir.path);
+
+      expect(results, hasLength(2));
     });
 
     test('finds matching .ttf files and infers weights', () {

@@ -5,6 +5,7 @@ import 'package:flutter_tweakcn_generator/src/font/font_cleanup.dart';
 import 'package:flutter_tweakcn_generator/src/font/custom_font_scanner.dart';
 import 'package:flutter_tweakcn_generator/src/font/font_downloader.dart';
 import 'package:flutter_tweakcn_generator/src/font/pubspec_font_adder.dart';
+import 'package:flutter_tweakcn_generator/src/font/pubspec_font_declarations.dart';
 import 'package:flutter_tweakcn_generator/src/generator/dart_theme_generator.dart';
 import 'package:flutter_tweakcn_generator/src/parser/css_parser.dart';
 import 'package:path/path.dart' as p;
@@ -67,6 +68,11 @@ Future<void> main(List<String> args) async {
     // Custom mode: scan local .ttf files provided by the user
     final fontsDir = p.join(projectDir, config.fontDir);
     final allFound = <DownloadedFont>[];
+    // Read before addFonts writes to it, so the scanner sees what pubspec
+    // said before this run started.
+    final declarations = PubspecFontDeclarations.read(
+      p.join(projectDir, 'pubspec.yaml'),
+    );
 
     for (final fontName in googleFonts) {
       stdout.writeln('Scanning for custom font: $fontName');
@@ -74,6 +80,7 @@ Future<void> main(List<String> args) async {
         fontName,
         fontsDir,
         relativeDir: config.fontDir,
+        declarations: declarations,
       );
       allFound.addAll(found);
     }
@@ -155,10 +162,13 @@ Future<void> main(List<String> args) async {
       final fontsDir = p.join(projectDir, config.fontDir);
       final pubspecPath = p.join(projectDir, 'pubspec.yaml');
       stdout.writeln('Font exclusive mode: cleaning up unused fonts...');
+      // Read before removeUndefinedFonts rewrites it: the declarations are
+      // what say which family each file on disk belongs to.
       FontCleanup.cleanFontsDirectory(
         fontsDir,
         googleFonts,
         allowEmpty: allowEmpty,
+        declarations: PubspecFontDeclarations.read(pubspecPath),
       );
       PubspecFontAdder.removeUndefinedFonts(
         pubspecPath,

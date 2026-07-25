@@ -1,9 +1,8 @@
 import 'dart:io';
 
-import 'package:yaml/yaml.dart';
-
 import 'font_downloader.dart';
 import 'font_family.dart';
+import 'pubspec_font_declarations.dart';
 
 /// Adds `flutter > fonts` declarations to a pubspec.yaml file.
 class PubspecFontAdder {
@@ -16,36 +15,6 @@ class PubspecFontAdder {
   /// raw text means the same as one read by the parser.
   static String _unquote(String value) =>
       _quotedPattern.firstMatch(value)?.group(2) ?? value;
-
-  /// The font family names declared under `flutter > fonts` in
-  /// [pubspecContent].
-  ///
-  /// Read with a YAML parser rather than by matching text, so that quoting,
-  /// comments, line endings and nesting are the parser's problem and a
-  /// `family:` key somewhere else in the file is not mistaken for a font
-  /// declaration. Names are whole: `Roboto Slab` does not declare `Roboto`.
-  ///
-  /// Returns nothing for a pubspec that does not parse; the caller's own
-  /// config load would already have failed on that.
-  static List<String> _declaredFamilies(String pubspecContent) {
-    Object? document;
-    try {
-      document = loadYaml(pubspecContent);
-    } catch (_) {
-      return const [];
-    }
-
-    if (document is! Map) return const [];
-    final flutter = document['flutter'];
-    if (flutter is! Map) return const [];
-    final fonts = flutter['fonts'];
-    if (fonts is! List) return const [];
-
-    return [
-      for (final entry in fonts)
-        if (entry is Map && entry['family'] != null) '${entry['family']}',
-    ];
-  }
 
   /// Adds font declarations for [fonts] to the pubspec.yaml at [pubspecPath].
   ///
@@ -60,7 +29,7 @@ class PubspecFontAdder {
     }
 
     var content = file.readAsStringSync();
-    final declared = _declaredFamilies(content);
+    final declared = PubspecFontDeclarations.parse(content).families;
 
     // Group by family
     final families = <String, List<DownloadedFont>>{};
@@ -193,7 +162,7 @@ class PubspecFontAdder {
       // Detect `    - family: XXX`. The line is matched rather than parsed
       // because its indentation also delimits the block being rewritten, but
       // the name it yields must mean the same thing as the one
-      // [_declaredFamilies] reads.
+      // [PubspecFontDeclarations] reads.
       final familyMatch = RegExp(r'^    - family:\s*(.+)$').firstMatch(line);
       if (familyMatch != null) {
         // Flush previous block

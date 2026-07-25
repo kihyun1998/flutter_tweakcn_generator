@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Fix `font_exclusive` cleanup keeping the files of a family whose name merely extends a defined one. Cleanup now takes each file's family from the `flutter > fonts` declarations in pubspec.yaml rather than guessing from the file name, so defining only `Roboto` removes a leftover `RobotoSlab-Bold.ttf` while leaving an `InterVariable.ttf` that `Inter` really does own. Files pubspec has never declared are still matched by name, which errs toward keeping them
+- `CustomFontScanner` no longer claims a file that pubspec already declares under another family, so a leftover file is not re-declared under the wrong family and made permanently uncleanable
+- Font file names are now matched case-insensitively, so a hand-named `inter-bold.ttf` is recognized as `Inter`'s rather than deleted as an unknown family's, and `.TTF` files are treated as fonts. Note that an unused `.TTF` file is now removed by cleanup where it was previously left in place
 - Fix a font family being skipped when its name is a prefix of an already-declared family, so declaring `Roboto` alongside `Roboto Slab` no longer silently does nothing
 - Existing font declarations are now read with a YAML parser instead of a substring search, so a family named in a comment, in an asset path, or under a key other than `flutter > fonts` no longer counts as declared, and a quoted family name is recognized as itself
 - Fix the last declaration in a `:root` or `.dark` block being dropped when it omits its trailing semicolon, which CSS permits

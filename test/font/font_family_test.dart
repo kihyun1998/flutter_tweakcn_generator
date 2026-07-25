@@ -36,6 +36,39 @@ void main() {
       expect(family.ownsFile('NotoSansKR-Regular.ttf'), isFalse);
     });
 
+    test('claims real-world file names that carry no weight separator', () {
+      final inter = FontFamily('Inter');
+
+      // Inter's own releases and Google Fonts' variable-font downloads.
+      expect(inter.ownsFile('InterVariable.ttf'), isTrue);
+      expect(inter.ownsFile('Inter24pt-Bold.ttf'), isTrue);
+      expect(FontFamily('Roboto').ownsFile('Roboto[wdth,wght].ttf'), isTrue);
+    });
+
+    test('guesses generously, claiming a prefix-sharing family too', () {
+      // Nothing in the name separates this from the case above, so the guess
+      // is wrong here on purpose. PubspecFontDeclarations is what settles it
+      // where being wrong would delete a file.
+      expect(FontFamily('Roboto').ownsFile('RobotoSlab-Bold.ttf'), isTrue);
+    });
+
+    test('claims files whose case differs', () {
+      final family = FontFamily('Inter');
+
+      expect(family.ownsFile('inter-regular.ttf'), isTrue);
+      expect(family.ownsFile('INTER-Bold.ttf'), isTrue);
+      expect(family.ownsFile('Inter-Bold.TTF'), isTrue);
+      expect(family.ownsFile('inter.ttf'), isTrue);
+    });
+
+    test('claims files with an unknown or absent weight suffix', () {
+      final family = FontFamily('Inter');
+
+      expect(family.ownsFile('Inter.ttf'), isTrue);
+      expect(family.ownsFile('Inter-Chonky.ttf'), isTrue);
+      expect(family.ownsFile('Inter_Bold.ttf'), isTrue);
+    });
+
     test('does not claim non-font files', () {
       final family = FontFamily('Inter');
 

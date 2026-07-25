@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'font_downloader.dart';
 import 'font_family.dart';
+import 'pubspec_font_declarations.dart';
 
 /// Scans a local directory for user-provided .ttf files matching font families.
 ///
@@ -40,6 +41,7 @@ class CustomFontScanner {
     String fontName,
     String fontsDir, {
     String relativeDir = 'fonts',
+    PubspecFontDeclarations declarations = PubspecFontDeclarations.empty,
   }) {
     final dir = Directory(fontsDir);
     if (!dir.existsSync()) {
@@ -57,6 +59,18 @@ class CustomFontScanner {
       if (entity is! File) continue;
       final fileName = entity.uri.pathSegments.last;
       if (!family.ownsFile(fileName)) continue;
+
+      // [FontFamily.ownsFile] is a guess from the name, and it claims files
+      // belonging to any family that shares a prefix. Where pubspec already
+      // says who owns the file, that record wins — otherwise the guess would
+      // be written back into pubspec as if it were fact, and a leftover
+      // `RobotoSlab-Bold.ttf` would be re-declared as one of `Roboto`'s and
+      // never cleaned up again.
+      final declaredFamilies = declarations.familiesOf(fileName);
+      if (declaredFamilies.isNotEmpty &&
+          !declaredFamilies.any(family.hasName)) {
+        continue;
+      }
 
       final weight = _weightFor(family.weightSuffixOf(fileName));
       results.add(

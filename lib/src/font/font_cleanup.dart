@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'font_family.dart';
+import 'pubspec_font_declarations.dart';
 
 /// Cleans up font files that are not in the defined font families list.
 class FontCleanup {
@@ -9,8 +10,14 @@ class FontCleanup {
   /// Removes font files from [fontsDir] that belong to none of
   /// [definedFamilies].
   ///
-  /// Which files a family owns is [FontFamily.ownsFile]'s decision. Files that
-  /// are not font files are left alone.
+  /// A file's family is taken from [declarations] when pubspec declares it,
+  /// because that is a record rather than a guess: it is what lets a leftover
+  /// `RobotoSlab-Bold.ttf` be removed when only `Roboto` is defined, without
+  /// also removing an `InterVariable.ttf` that `Inter` really does own.
+  ///
+  /// A file pubspec has never heard of was never managed here, so its family
+  /// is guessed with [FontFamily.ownsFile] — which errs toward keeping.
+  /// Files that are not font files are left alone.
   ///
   /// If the directory becomes empty after cleanup, it is deleted as well.
   ///
@@ -22,6 +29,7 @@ class FontCleanup {
     String fontsDir,
     List<String> definedFamilies, {
     bool allowEmpty = false,
+    PubspecFontDeclarations declarations = PubspecFontDeclarations.empty,
   }) {
     if (definedFamilies.isEmpty && !allowEmpty) return;
 
@@ -36,7 +44,16 @@ class FontCleanup {
       final name = entity.uri.pathSegments.last;
       if (!FontFamily.isFontFile(name)) continue;
 
-      final keep = families.any((family) => family.ownsFile(name));
+      final declaredFamilies = declarations.familiesOf(name);
+      final keep =
+          declaredFamilies.isNotEmpty
+              // Any one defined declaration is enough to keep the file: a
+              // second declaration under some other spelling must not be able
+              // to condemn it.
+              ? declaredFamilies.any(
+                (declared) => families.any((f) => f.hasName(declared)),
+              )
+              : families.any((family) => family.ownsFile(name));
       if (!keep) {
         entity.deleteSync();
         stdout.writeln('  Removed unused font: $name');
