@@ -50,16 +50,11 @@ class FontFamily {
   String fileNameFor(String weightName) =>
       '$fileNamePrefix-$weightName$extension';
 
-  /// Whether [pubspecContent] already declares this family under
-  /// `flutter > fonts`.
-  ///
-  /// pubspec spells the family the same way CSS does, so this matches on
-  /// [name] rather than on [fileNamePrefix].
-  bool isDeclaredIn(String pubspecContent) =>
-      pubspecContent.contains('family: $name');
-
   /// Whether [declaredName] — a family name read from pubspec or from
   /// `--font-sans` — refers to this family.
+  ///
+  /// pubspec and CSS both spell the family the way [name] does, so this is an
+  /// exact comparison: `Roboto` and `Roboto Slab` are different families.
   bool hasName(String declaredName) => declaredName == name;
 
   @override

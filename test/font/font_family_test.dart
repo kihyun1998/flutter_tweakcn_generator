@@ -85,28 +85,19 @@ void main() {
     });
   });
 
-  group('FontFamily.isDeclaredIn', () {
-    test('finds a family declared in pubspec content', () {
-      const pubspec = '''
-flutter:
-  fonts:
-    - family: Inter
-      fonts:
-        - asset: fonts/Inter-Regular.ttf
-''';
-
-      expect(FontFamily('Inter').isDeclaredIn(pubspec), isTrue);
-      expect(FontFamily('Roboto').isDeclaredIn(pubspec), isFalse);
+  group('FontFamily.hasName', () {
+    test('matches its own name exactly', () {
+      expect(FontFamily('Roboto').hasName('Roboto'), isTrue);
+      expect(FontFamily('Noto Sans KR').hasName('Noto Sans KR'), isTrue);
     });
 
-    test('uses the unsanitized name, as pubspec declares it', () {
-      const pubspec = '''
-flutter:
-  fonts:
-    - family: Noto Sans KR
-''';
+    test('does not match a name that merely extends it', () {
+      expect(FontFamily('Roboto').hasName('Roboto Slab'), isFalse);
+      expect(FontFamily('Roboto Slab').hasName('Roboto'), isFalse);
+    });
 
-      expect(FontFamily('Noto Sans KR').isDeclaredIn(pubspec), isTrue);
+    test('is case sensitive, as pubspec and CSS are', () {
+      expect(FontFamily('Roboto').hasName('roboto'), isFalse);
     });
   });
 }

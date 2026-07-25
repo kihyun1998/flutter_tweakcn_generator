@@ -117,6 +117,162 @@ flutter:
       expect(matches, equals(1));
     });
 
+    test('adds a family whose name is a prefix of a declared one', () {
+      final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+flutter:
+  fonts:
+    - family: Roboto Slab
+      fonts:
+        - asset: fonts/RobotoSlab-Regular.ttf
+          weight: 400
+''');
+
+      PubspecFontAdder.addFonts(path, [
+        DownloadedFont(
+          family: 'Roboto',
+          filePath: 'fonts/Roboto-Regular.ttf',
+          weight: 400,
+        ),
+      ]);
+      final result = readPubspec(path);
+
+      expect(result, contains('- family: Roboto\n'));
+      expect(result, contains('family: Roboto Slab'));
+    });
+
+    test('adds a family whose name extends a declared one', () {
+      final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+flutter:
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: fonts/Roboto-Regular.ttf
+          weight: 400
+''');
+
+      PubspecFontAdder.addFonts(path, [
+        DownloadedFont(
+          family: 'Roboto Slab',
+          filePath: 'fonts/RobotoSlab-Regular.ttf',
+          weight: 400,
+        ),
+      ]);
+      final result = readPubspec(path);
+
+      expect(result, contains('family: Roboto Slab'));
+      expect('family: Roboto\n'.allMatches(result).length, 1);
+    });
+
+    test('does not count a family named only in a comment as declared', () {
+      final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+flutter:
+  fonts:
+    # - family: Inter
+    - family: Roboto
+      fonts:
+        - asset: fonts/Roboto-Regular.ttf
+          weight: 400
+''');
+
+      PubspecFontAdder.addFonts(path, testFonts);
+
+      expect('- family: Inter'.allMatches(readPubspec(path)).length, 2);
+    });
+
+    test('does not count a family named only in an asset path as declared', () {
+      final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+flutter:
+  assets:
+    - assets/family: Inter/logo.png
+''');
+
+      PubspecFontAdder.addFonts(path, testFonts);
+
+      expect(readPubspec(path), contains('- family: Inter'));
+    });
+
+    test('treats a quoted declaration as declared', () {
+      final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+flutter:
+  fonts:
+    - family: "Inter"
+      fonts:
+        - asset: fonts/Inter-Regular.ttf
+          weight: 400
+''');
+
+      PubspecFontAdder.addFonts(path, testFonts);
+
+      expect('family: "Inter"'.allMatches(readPubspec(path)).length, 1);
+      expect(readPubspec(path), isNot(contains('- family: Inter\n')));
+    });
+
+    test('recognizes a declaration in a file with CRLF line endings', () {
+      final path = createPubspec(
+        'name: my_app\r\n'
+        'version: 1.0.0\r\n'
+        '\r\n'
+        'flutter:\r\n'
+        '  fonts:\r\n'
+        '    - family: Inter\r\n'
+        '      fonts:\r\n'
+        '        - asset: fonts/Inter-Regular.ttf\r\n'
+        '          weight: 400\r\n',
+      );
+
+      PubspecFontAdder.addFonts(path, testFonts);
+
+      expect('family: Inter'.allMatches(readPubspec(path)).length, 1);
+    });
+
+    test('ignores a family key outside flutter > fonts', () {
+      final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+some_other_tool:
+  fonts:
+    - family: Inter
+''');
+
+      PubspecFontAdder.addFonts(path, testFonts);
+
+      expect(readPubspec(path), contains('    - family: Inter'));
+    });
+
+    test('treats a declaration with a trailing comment as declared', () {
+      final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+flutter:
+  fonts:
+    - family: Inter # the body font
+      fonts:
+        - asset: fonts/Inter-Regular.ttf
+          weight: 400
+''');
+
+      PubspecFontAdder.addFonts(path, testFonts);
+
+      expect('family: Inter'.allMatches(readPubspec(path)).length, 1);
+    });
+
     test('writes weight for all fonts including 400', () {
       final path = createPubspec('''
 name: my_app
@@ -359,6 +515,24 @@ flutter:
       expect(result, isNot(contains('Inter')));
       expect(result, isNot(contains('Noto Sans KR')));
       expect(result, contains('uses-material-design: true'));
+    });
+
+    test('keeps a quoted family that is defined', () {
+      final path = createPubspec('''
+name: my_app
+version: 1.0.0
+
+flutter:
+  fonts:
+    - family: "Inter"
+      fonts:
+        - asset: fonts/Inter-Regular.ttf
+          weight: 400
+''');
+
+      PubspecFontAdder.removeUndefinedFonts(path, ['Inter']);
+
+      expect(readPubspec(path), contains('family: "Inter"'));
     });
 
     test('does nothing when no fonts section exists', () {
