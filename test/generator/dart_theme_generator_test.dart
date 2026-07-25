@@ -31,6 +31,31 @@ void main() {
       expect(generatedCode, contains('Brightness.light'));
     });
 
+    test('leaves a complete theme untouched by fallback resolution', () {
+      // Golden: a CSS file defining every mapped token must generate exactly
+      // what it did before ColorScheme fallbacks existed.
+      expect(
+        generatedCode,
+        contains('''
+const _lightColorScheme = ColorScheme(
+  brightness: Brightness.light,
+  surface: Color(0xFFFFFFFF),
+  onSurface: Color(0xFF0A0A0A),
+  primary: Color(0xFF171717),
+  onPrimary: Color(0xFFFAFAFA),
+  secondary: Color(0xFFF5F5F5),
+  onSecondary: Color(0xFF171717),
+  error: Color(0xFFEF4444),
+  onError: Color(0xFFFAFAFA),
+  outline: Color(0xFFE5E5E5),
+  outlineVariant: Color(0xFFE5E5E5),
+  surfaceContainerLowest: Color(0xFFFFFFFF),
+  surfaceContainerHighest: Color(0xFFF5F5F5),
+  onSurfaceVariant: Color(0xFF737373),
+);'''),
+      );
+    });
+
     test('generates dark ColorScheme', () {
       expect(generatedCode, contains('_darkColorScheme'));
       expect(generatedCode, contains('Brightness.dark'));
@@ -513,6 +538,86 @@ void main() {
 
       final matches = "fontFamily: 'My Custom Font'".allMatches(code).length;
       expect(matches, equals(2));
+    });
+  });
+
+  group('DartThemeGenerator ColorScheme completeness', () {
+    // Every parameter Flutter's ColorScheme constructor marks `required`.
+    const requiredParameters = [
+      'brightness',
+      'primary',
+      'onPrimary',
+      'secondary',
+      'onSecondary',
+      'error',
+      'onError',
+      'surface',
+      'onSurface',
+    ];
+
+    String generateFrom(String css) =>
+        DartThemeGenerator(CssParser.parse(css)).generate();
+
+    test('emits every required parameter for a minimal theme', () {
+      final code = generateFrom('''
+:root {
+  --background: #ffffff;
+  --primary: #ff0000;
+}
+''');
+
+      final light = code.substring(
+        code.indexOf('const _lightColorScheme'),
+        code.indexOf('const _darkColorScheme'),
+      );
+      for (final parameter in requiredParameters) {
+        expect(
+          light,
+          contains('  $parameter: '),
+          reason: '$parameter is required and must always be emitted',
+        );
+      }
+    });
+
+    test('emits every required parameter for a theme with no colors', () {
+      final code = generateFrom(':root { --radius: 0.5rem; }');
+
+      for (final scheme in ['_lightColorScheme', '_darkColorScheme']) {
+        final start = code.indexOf('const $scheme');
+        final block = code.substring(start, code.indexOf(');', start));
+        for (final parameter in requiredParameters) {
+          expect(
+            block,
+            contains('  $parameter: '),
+            reason: '$parameter missing from $scheme',
+          );
+        }
+      }
+    });
+
+    test('reports the tokens it substituted, per mode', () {
+      final generator = DartThemeGenerator(
+        CssParser.parse('''
+:root {
+  --background: #ffffff;
+  --primary: #ff0000;
+}
+'''),
+      );
+
+      final substituted = generator.substitutedColorSchemeTokens;
+      expect(substituted.keys, containsAll(['light', 'dark']));
+      expect(substituted['light'], contains('destructive'));
+      expect(substituted['light'], isNot(contains('primary')));
+      // The dark block is absent entirely, so every token is substituted.
+      expect(substituted['dark'], contains('background'));
+    });
+
+    test('reports nothing for a theme that defines every token', () {
+      final css = File('test/fixtures/sample_hex.css').readAsStringSync();
+      final generator = DartThemeGenerator(CssParser.parse(css));
+
+      expect(generator.substitutedColorSchemeTokens, isEmpty);
     });
   });
 }

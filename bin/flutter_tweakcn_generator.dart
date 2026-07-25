@@ -41,6 +41,18 @@ Future<void> main(List<String> args) async {
   );
   final dartCode = generator.generate();
 
+  // ColorScheme requires these, so a fallback was generated rather than an
+  // uncompilable file. Say so — a substituted color is almost never what the
+  // user wants, and the generated file gives no clue on its own.
+  final substituted = generator.substitutedColorSchemeTokens;
+  for (final entry in substituted.entries) {
+    stderr.writeln(
+      'Warning: ${entry.key} theme does not define '
+      '${entry.value.map((t) => '--$t').join(', ')}. '
+      'A fallback color was substituted in ColorScheme.',
+    );
+  }
+
   // Write output
   final outputFile = File(p.join(projectDir, config.output));
   outputFile.parent.createSync(recursive: true);

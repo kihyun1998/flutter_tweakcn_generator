@@ -166,6 +166,8 @@ targets:
 | `--muted` | `surfaceContainerHighest` |
 | `--muted-foreground` | `onSurfaceVariant` |
 
+The first eight rows are `required` parameters of Flutter's `ColorScheme`, so they are always emitted. When your CSS does not define one, a fallback is substituted and the token is named in a warning: `on*` colors become black or white by contrast against their base color, a missing `secondary` reuses `primary`, and anything left over falls back to Material's own baseline. The remaining rows are optional and are emitted only when defined.
+
 ### Google Fonts
 
 When `--font-sans` contains a specific font name, a `textTheme` is generated using the `google_fonts` package:

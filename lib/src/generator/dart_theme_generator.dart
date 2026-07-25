@@ -1,5 +1,6 @@
 import '../models/tweakcn_theme_data.dart';
 import '../parser/shadow_parser.dart';
+import 'color_scheme_resolver.dart';
 
 /// Generates a complete Dart theme file from [TweakcnThemeData].
 ///
@@ -51,21 +52,11 @@ class DartThemeGenerator {
 
   // -- ColorScheme ----------------------------------------------------------
 
-  /// Maps CSS variable names to ColorScheme property names.
-  static const _colorSchemeMapping = {
-    'background': 'surface',
-    'foreground': 'onSurface',
-    'primary': 'primary',
-    'primary-foreground': 'onPrimary',
-    'secondary': 'secondary',
-    'secondary-foreground': 'onSecondary',
-    'destructive': 'error',
-    'destructive-foreground': 'onError',
-    'border': 'outline',
-    'input': 'outlineVariant',
-    'card': 'surfaceContainerLowest',
-    'muted': 'surfaceContainerHighest',
-    'muted-foreground': 'onSurfaceVariant',
+  /// The required colors of each mode, resolved once and shared by the code
+  /// writer and [substitutedColorSchemeTokens].
+  late final Map<String, ResolvedColorScheme> _resolvedColorSchemes = {
+    'light': ColorSchemeResolver.resolve(data.light.colors, isDark: false),
+    'dark': ColorSchemeResolver.resolve(data.dark.colors, isDark: true),
   };
 
   void _writeColorSchemes(StringBuffer buf) {
@@ -79,13 +70,18 @@ class DartThemeGenerator {
   }
 
   void _writeColorScheme(StringBuffer buf, String name, ThemeModeData mode) {
+    // Every required property is written whether or not the theme defines it,
+    // because omitting one produces a file that does not compile. The optional
+    // properties are written only when the theme defines them.
+    final resolvedColors = _resolvedColorSchemes[name]!.colors;
+
     buf.writeln('const _${name}ColorScheme = ColorScheme(');
     buf.writeln('  brightness: Brightness.$name,');
 
-    for (final entry in _colorSchemeMapping.entries) {
+    for (final entry in ColorSchemeResolver.tokenMapping.entries) {
       final cssVar = entry.key;
       final schemeProp = entry.value;
-      final color = mode.colors[cssVar];
+      final color = resolvedColors[schemeProp] ?? mode.colors[cssVar];
       if (color != null) {
         buf.writeln('  $schemeProp: ${_colorLiteral(color)},');
       }
@@ -94,6 +90,16 @@ class DartThemeGenerator {
     buf.writeln(');');
     buf.writeln();
   }
+
+  /// CSS color tokens required by `ColorScheme` that this theme does not
+  /// define, keyed by mode name. A fallback was substituted for each.
+  ///
+  /// Empty when both modes define every required token.
+  Map<String, List<String>> get substitutedColorSchemeTokens => {
+    for (final entry in _resolvedColorSchemes.entries)
+      if (entry.value.substitutedTokens.isNotEmpty)
+        entry.key: entry.value.substitutedTokens,
+  };
 
   // -- TweakcnColors --------------------------------------------------------
 
