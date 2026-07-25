@@ -115,12 +115,46 @@ Future<void> main(List<String> args) async {
   // font_exclusive: remove fonts not defined in --font-sans
   if ((config.fontMode == 'local' || config.fontMode == 'custom') &&
       config.fontExclusive) {
-    final fontsDir = p.join(projectDir, config.fontDir);
-    final pubspecPath = p.join(projectDir, 'pubspec.yaml');
-    stdout.writeln('Font exclusive mode: cleaning up unused fonts...');
-    FontCleanup.cleanFontsDirectory(fontsDir, googleFonts);
-    PubspecFontAdder.removeUndefinedFonts(pubspecPath, googleFonts);
-    stdout.writeln('Font cleanup complete');
+    // An empty font list has two very different causes. A theme that declares
+    // a system font stack (`ui-sans-serif, system-ui, ...`) legitimately
+    // resolves to no font families, and the fonts left over from a previous
+    // run should go. A theme where `--font-sans` was never found — or was
+    // found blank — is a detection failure, and deleting the user's font files
+    // on that basis is unrecoverable in `custom` mode.
+    final fontStackDeclared =
+        themeData.light.fontSans?.trim().isNotEmpty ?? false;
+    final allowEmpty = fontStackDeclared || config.fontExclusiveAllowEmpty;
+
+    if (googleFonts.isEmpty && !allowEmpty) {
+      stderr.writeln(
+        'Warning: skipping font_exclusive cleanup — no --font-sans was found '
+        'in the :root block of ${config.input}.',
+      );
+      stderr.writeln(
+        '  Cleaning up now would delete every font file in ${config.fontDir}/ '
+        'and every font declaration in pubspec.yaml.',
+      );
+      stderr.writeln(
+        '  Declare --font-sans in :root, set font_exclusive: false if you '
+        'manage fonts yourself, or set font_exclusive_allow_empty: true to '
+        'clean up anyway.',
+      );
+    } else {
+      final fontsDir = p.join(projectDir, config.fontDir);
+      final pubspecPath = p.join(projectDir, 'pubspec.yaml');
+      stdout.writeln('Font exclusive mode: cleaning up unused fonts...');
+      FontCleanup.cleanFontsDirectory(
+        fontsDir,
+        googleFonts,
+        allowEmpty: allowEmpty,
+      );
+      PubspecFontAdder.removeUndefinedFonts(
+        pubspecPath,
+        googleFonts,
+        allowEmpty: allowEmpty,
+      );
+      stdout.writeln('Font cleanup complete');
+    }
   }
 
   // Summary

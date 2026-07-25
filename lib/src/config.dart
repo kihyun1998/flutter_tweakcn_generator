@@ -24,6 +24,16 @@ class TweakcnConfig {
   /// pubspec.yaml font declarations that are not defined in `--font-sans`.
   final bool fontExclusive;
 
+  /// When `true`, [fontExclusive] cleanup also runs when the CSS declares no
+  /// `--font-sans` at all, deleting every font file and declaration.
+  ///
+  /// Off by default: a missing `--font-sans` is usually a parsing miss rather
+  /// than a request to delete everything, and under `fontMode` `'custom'` the
+  /// deleted files are user-provided and cannot be recovered. A CSS file that
+  /// declares a system font stack (`ui-sans-serif, system-ui, ...`) is already
+  /// cleaned up without this flag — that is a stated intent, not a blank.
+  final bool fontExclusiveAllowEmpty;
+
   /// Directory where local font .ttf files are stored (relative to project root).
   final String fontDir;
 
@@ -33,6 +43,7 @@ class TweakcnConfig {
     this.classPrefix = 'Tweakcn',
     this.fontMode = 'google_fonts',
     this.fontExclusive = false,
+    this.fontExclusiveAllowEmpty = false,
     this.fontDir = 'fonts',
   });
 
@@ -65,6 +76,8 @@ class TweakcnConfig {
       classPrefix: config?['class_prefix'] as String? ?? 'Tweakcn',
       fontMode: config?['font_mode'] as String? ?? 'google_fonts',
       fontExclusive: config?['font_exclusive'] as bool? ?? false,
+      fontExclusiveAllowEmpty:
+          config?['font_exclusive_allow_empty'] as bool? ?? false,
       fontDir: config?['font_dir'] as String? ?? 'fonts',
     );
   }

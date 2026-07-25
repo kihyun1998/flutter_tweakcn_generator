@@ -57,10 +57,18 @@ class PubspecFontAdder {
   /// [definedFamilies].
   ///
   /// If all families are removed, the `fonts:` key is also removed.
+  ///
+  /// An empty [definedFamilies] would strip every font declaration. That is a
+  /// detection failure far more often than it is an instruction, so it is
+  /// treated as a no-op unless the caller sets [allowEmpty] to say it knows
+  /// the theme really does define no fonts.
   static void removeUndefinedFonts(
     String pubspecPath,
-    List<String> definedFamilies,
-  ) {
+    List<String> definedFamilies, {
+    bool allowEmpty = false,
+  }) {
+    if (definedFamilies.isEmpty && !allowEmpty) return;
+
     final file = File(pubspecPath);
     if (!file.existsSync()) return;
 

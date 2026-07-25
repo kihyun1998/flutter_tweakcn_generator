@@ -98,9 +98,14 @@ flutter_tweakcn_generator:
   font_mode: google_fonts                   # google_fonts (default) | local | custom
   font_dir: fonts                           # local font directory (default: fonts)
   font_exclusive: false                     # auto-clean unused fonts (default: false, local mode only)
+  font_exclusive_allow_empty: false         # clean up even when no --font-sans is declared (default: false)
 ```
 
 When `font_exclusive: true` is set with `font_mode: local`, fonts in the `fonts/` directory that are no longer referenced by `--font-sans` are automatically deleted, and their `flutter > fonts` declarations are removed from `pubspec.yaml`. Useful when switching fonts to keep the project clean.
+
+Cleanup is skipped with a warning when no `--font-sans` is found in the `:root` block, since deleting every font file on the basis of a parsing miss is not recoverable in `custom` mode. Switching `--font-sans` to a pure system stack (`ui-sans-serif, system-ui, ...`) still cleans up as before — that is a declared intent, not a missing value.
+
+Set `font_exclusive_allow_empty: true` to clean up anyway when the CSS declares no `--font-sans` at all.
 
 Changing `class_prefix` renames the generated classes:
 

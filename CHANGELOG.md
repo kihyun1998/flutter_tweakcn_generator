@@ -1,3 +1,9 @@
+## Unreleased
+
+- Fix `font_exclusive` deleting every font file and font declaration when `--font-sans` could not be found in `:root` or was declared blank. Cleanup is now skipped with a warning; switching to a system font stack still cleans up as before
+- Add `font_exclusive_allow_empty` option to opt back into cleaning up when no `--font-sans` is declared
+- `FontCleanup.cleanFontsDirectory` and `PubspecFontAdder.removeUndefinedFonts` now ignore an empty family list unless the new `allowEmpty` argument is set
+
 ## 0.3.0
 
 - Add `font_mode: custom` for user-provided `.ttf` files not available on Google Fonts

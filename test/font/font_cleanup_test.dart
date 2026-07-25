@@ -70,14 +70,38 @@ void main() {
       FontCleanup.cleanFontsDirectory(nonExistent, ['Inter']);
     });
 
-    test('removes all fonts when definedFamilies is empty', () {
+    test('keeps every font when definedFamilies is empty', () {
       createFont('Inter-Regular.ttf');
       createFont('Inter-Bold.ttf');
       createFont('NotoSansKR-Regular.ttf');
 
       FontCleanup.cleanFontsDirectory(fontsDir, []);
 
+      // An empty family list means detection failed, not "delete everything".
+      expect(Directory(fontsDir).existsSync(), isTrue);
+      expect(File('$fontsDir/Inter-Regular.ttf').existsSync(), isTrue);
+      expect(File('$fontsDir/Inter-Bold.ttf').existsSync(), isTrue);
+      expect(File('$fontsDir/NotoSansKR-Regular.ttf').existsSync(), isTrue);
+    });
+
+    test('removes all fonts when definedFamilies is empty and allowEmpty', () {
+      createFont('Inter-Regular.ttf');
+      createFont('Inter-Bold.ttf');
+      createFont('NotoSansKR-Regular.ttf');
+
+      FontCleanup.cleanFontsDirectory(fontsDir, [], allowEmpty: true);
+
       expect(Directory(fontsDir).existsSync(), isFalse);
+    });
+
+    test('allowEmpty has no effect when families are defined', () {
+      createFont('Inter-Regular.ttf');
+      createFont('Roboto-Regular.ttf');
+
+      FontCleanup.cleanFontsDirectory(fontsDir, ['Inter'], allowEmpty: true);
+
+      expect(File('$fontsDir/Inter-Regular.ttf').existsSync(), isTrue);
+      expect(File('$fontsDir/Roboto-Regular.ttf').existsSync(), isFalse);
     });
 
     test('ignores non-ttf files', () {
