@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'font_downloader.dart';
+import 'font_family.dart';
 
 /// Adds `flutter > fonts` declarations to a pubspec.yaml file.
 class PubspecFontAdder {
@@ -34,7 +35,7 @@ class PubspecFontAdder {
           entry.value..sort((a, b) => a.weight.compareTo(b.weight));
 
       // Skip if already declared
-      if (content.contains('family: $family')) {
+      if (FontFamily(family).isDeclaredIn(content)) {
         continue;
       }
 
@@ -75,6 +76,10 @@ class PubspecFontAdder {
     final lines = file.readAsStringSync().split('\n');
     final result = <String>[];
 
+    final families = definedFamilies.map(FontFamily.new).toList();
+    bool isDefined(String? family) =>
+        family != null && families.any((f) => f.hasName(family));
+
     // Find the `  fonts:` line inside the flutter section
     var inFlutter = false;
     var inFonts = false;
@@ -97,8 +102,7 @@ class PubspecFontAdder {
       if (inFlutter && RegExp(r'^\S').hasMatch(line) && line.isNotEmpty) {
         // Flush any pending block before leaving
         if (inFonts && currentBlock.isNotEmpty) {
-          if (currentFamily != null &&
-              definedFamilies.contains(currentFamily)) {
+          if (isDefined(currentFamily)) {
             result.addAll(currentBlock);
             keptFamilies++;
           }
@@ -133,8 +137,7 @@ class PubspecFontAdder {
           !line.trimLeft().startsWith('fonts:')) {
         // Flush pending block
         if (currentBlock.isNotEmpty) {
-          if (currentFamily != null &&
-              definedFamilies.contains(currentFamily)) {
+          if (isDefined(currentFamily)) {
             result.addAll(currentBlock);
             keptFamilies++;
           }
@@ -151,8 +154,7 @@ class PubspecFontAdder {
       if (familyMatch != null) {
         // Flush previous block
         if (currentBlock.isNotEmpty) {
-          if (currentFamily != null &&
-              definedFamilies.contains(currentFamily)) {
+          if (isDefined(currentFamily)) {
             result.addAll(currentBlock);
             keptFamilies++;
           }
@@ -172,7 +174,7 @@ class PubspecFontAdder {
 
     // Flush any remaining block
     if (currentBlock.isNotEmpty) {
-      if (currentFamily != null && definedFamilies.contains(currentFamily)) {
+      if (isDefined(currentFamily)) {
         result.addAll(currentBlock);
         keptFamilies++;
       }

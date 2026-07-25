@@ -1,15 +1,16 @@
 import 'dart:io';
 
+import 'font_family.dart';
+
 /// Cleans up font files that are not in the defined font families list.
 class FontCleanup {
   FontCleanup._();
 
-  /// Removes .ttf files from [fontsDir] whose names don't start with any of
-  /// the sanitized [definedFamilies] names.
+  /// Removes font files from [fontsDir] that belong to none of
+  /// [definedFamilies].
   ///
-  /// A family name is sanitized by removing spaces (e.g. `'Noto Sans KR'` →
-  /// `'NotoSansKR'`). A file is kept if its basename starts with any sanitized
-  /// family name.
+  /// Which files a family owns is [FontFamily.ownsFile]'s decision. Files that
+  /// are not font files are left alone.
   ///
   /// If the directory becomes empty after cleanup, it is deleted as well.
   ///
@@ -27,16 +28,15 @@ class FontCleanup {
     final dir = Directory(fontsDir);
     if (!dir.existsSync()) return;
 
-    final sanitized =
-        definedFamilies.map((f) => f.replaceAll(' ', '')).toList();
+    final families = definedFamilies.map(FontFamily.new).toList();
 
     final entities = dir.listSync();
     for (final entity in entities) {
       if (entity is! File) continue;
       final name = entity.uri.pathSegments.last;
-      if (!name.endsWith('.ttf')) continue;
+      if (!FontFamily.isFontFile(name)) continue;
 
-      final keep = sanitized.any((prefix) => name.startsWith(prefix));
+      final keep = families.any((family) => family.ownsFile(name));
       if (!keep) {
         entity.deleteSync();
         stdout.writeln('  Removed unused font: $name');

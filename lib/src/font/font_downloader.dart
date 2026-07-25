@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'font_family.dart';
+
 /// A downloaded font file with its metadata.
 class DownloadedFont {
   /// Font family name (e.g. `'Inter'`).
@@ -71,14 +73,14 @@ class FontDownloader {
       dir.createSync(recursive: true);
     }
 
+    final family = FontFamily(fontName);
     final results = <DownloadedFont>[];
     final client = HttpClient();
 
     try {
       for (final entry in entries) {
         final weightName = weightNames[entry.weight] ?? 'W${entry.weight}';
-        final sanitized = fontName.replaceAll(' ', '');
-        final fileName = '$sanitized-$weightName.ttf';
+        final fileName = family.fileNameFor(weightName);
         final absolutePath = '$fontsDir/$fileName';
 
         results.add(

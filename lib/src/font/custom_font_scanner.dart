@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'font_downloader.dart';
+import 'font_family.dart';
 
 /// Scans a local directory for user-provided .ttf files matching font families.
 ///
@@ -27,8 +28,8 @@ class CustomFontScanner {
     'Heavy': 900,
   };
 
-  /// Scans [fontsDir] for .ttf files whose names start with the sanitized
-  /// form of [fontName] (spaces removed).
+  /// Scans [fontsDir] for the font files belonging to [fontName], as decided
+  /// by [FontFamily.ownsFile].
   ///
   /// [relativeDir] is the relative path used in [DownloadedFont.filePath]
   /// (defaults to `'fonts'`).
@@ -49,16 +50,15 @@ class CustomFontScanner {
       return [];
     }
 
-    final sanitized = fontName.replaceAll(' ', '');
+    final family = FontFamily(fontName);
     final results = <DownloadedFont>[];
 
     for (final entity in dir.listSync()) {
       if (entity is! File) continue;
       final fileName = entity.uri.pathSegments.last;
-      if (!fileName.endsWith('.ttf')) continue;
-      if (!fileName.startsWith(sanitized)) continue;
+      if (!family.ownsFile(fileName)) continue;
 
-      final weight = _inferWeight(fileName, sanitized);
+      final weight = _weightFor(family.weightSuffixOf(fileName));
       results.add(
         DownloadedFont(
           family: fontName,
@@ -74,7 +74,8 @@ class CustomFontScanner {
         '  Warning: No .ttf files found for "$fontName" in $fontsDir',
       );
       stderr.writeln(
-        '  Expected files like: $sanitized-Regular.ttf, $sanitized-Bold.ttf, etc.',
+        '  Expected files like: ${family.fileNameFor('Regular')}, '
+        '${family.fileNameFor('Bold')}, etc.',
       );
     }
 
@@ -83,19 +84,11 @@ class CustomFontScanner {
     return results;
   }
 
-  /// Infers font-weight from the file name by matching known suffixes.
+  /// Maps a file name's weight suffix to a CSS font-weight.
   ///
-  /// e.g. `MyFont-Bold.ttf` → 700, `MyFont-Light.ttf` → 300.
-  /// Falls back to 400 (Regular) if no suffix matches.
-  static int _inferWeight(String fileName, String sanitizedFamily) {
-    // Strip extension and family prefix: "MyFont-Bold.ttf" → "Bold" or "-Bold"
-    final stem = fileName.substring(0, fileName.length - 4); // remove .ttf
-    var suffix = stem.substring(sanitizedFamily.length); // remove family prefix
-    // Strip leading dash or underscore.
-    if (suffix.startsWith('-') || suffix.startsWith('_')) {
-      suffix = suffix.substring(1);
-    }
-
+  /// e.g. `Bold` → 700, `Light` → 300. Falls back to 400 (Regular) for an
+  /// empty or unrecognized suffix.
+  static int _weightFor(String suffix) {
     if (suffix.isEmpty) return 400;
 
     for (final entry in _weightSuffixes.entries) {

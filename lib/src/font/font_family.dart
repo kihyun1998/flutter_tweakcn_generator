@@ -1,0 +1,74 @@
+/// A font family name, and the rules for recognizing it wherever it is
+/// written.
+///
+/// A family is spelled one way in CSS and `pubspec.yaml` (`Noto Sans KR`) and
+/// another in file names (`NotoSansKR-Bold.ttf`). Every part of the package
+/// that downloads, scans, declares, or deletes a font has to agree on that
+/// translation, so it lives here rather than in each of them.
+class FontFamily {
+  /// The family name as written in CSS and in `pubspec.yaml`.
+  final String name;
+
+  /// The family name as it appears at the start of a font file name: [name]
+  /// with its spaces removed.
+  final String fileNamePrefix;
+
+  FontFamily(this.name) : fileNamePrefix = name.replaceAll(' ', '');
+
+  /// The file extension this package downloads and declares.
+  static const extension = '.ttf';
+
+  /// Whether [fileName] is a font file this package manages, whatever family
+  /// it belongs to.
+  static bool isFontFile(String fileName) => fileName.endsWith(extension);
+
+  /// Whether [fileName] is a font file belonging to this family.
+  bool ownsFile(String fileName) =>
+      isFontFile(fileName) && fileName.startsWith(fileNamePrefix);
+
+  /// The weight portion of [fileName], with the family prefix and any
+  /// separator removed: `NotoSansKR-Bold.ttf` → `Bold`.
+  ///
+  /// Returns an empty string when the file names no weight, as in
+  /// `Inter.ttf`.
+  String weightSuffixOf(String fileName) {
+    final stem =
+        isFontFile(fileName)
+            ? fileName.substring(0, fileName.length - extension.length)
+            : fileName;
+    if (stem.length <= fileNamePrefix.length) return '';
+
+    final suffix = stem.substring(fileNamePrefix.length);
+    return suffix.startsWith('-') || suffix.startsWith('_')
+        ? suffix.substring(1)
+        : suffix;
+  }
+
+  /// The file name this family's [weightName] weight is stored under.
+  ///
+  /// The result is always a file [ownsFile] claims back.
+  String fileNameFor(String weightName) =>
+      '$fileNamePrefix-$weightName$extension';
+
+  /// Whether [pubspecContent] already declares this family under
+  /// `flutter > fonts`.
+  ///
+  /// pubspec spells the family the same way CSS does, so this matches on
+  /// [name] rather than on [fileNamePrefix].
+  bool isDeclaredIn(String pubspecContent) =>
+      pubspecContent.contains('family: $name');
+
+  /// Whether [declaredName] — a family name read from pubspec or from
+  /// `--font-sans` — refers to this family.
+  bool hasName(String declaredName) => declaredName == name;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || other is FontFamily && other.name == name;
+
+  @override
+  int get hashCode => name.hashCode;
+
+  @override
+  String toString() => 'FontFamily($name)';
+}
