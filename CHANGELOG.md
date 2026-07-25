@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Fix the last declaration in a `:root` or `.dark` block being dropped when it omits its trailing semicolon, which CSS permits
+- Strip `/* ... */` comments before parsing, so a commented-out declaration is no longer read as real and a brace inside a comment no longer breaks block extraction
+
 - Fix generated `ColorScheme` omitting parameters Flutter marks `required`, which made the generated file fail to compile when the CSS did not define every mapped token. Missing colors now fall back to a contrast-derived or Material baseline value, and the CLI warns which tokens were substituted
 
 - Fix `font_exclusive` deleting every font file and font declaration when `--font-sans` could not be found in `:root` or was declared blank. Cleanup is now skipped with a warning; switching to a system font stack still cleans up as before

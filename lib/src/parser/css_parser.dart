@@ -65,8 +65,9 @@ class CssParser {
 
   /// Parses a full CSS string copied from [tweakcn.com](https://tweakcn.com).
   static TweakcnThemeData parse(String css) {
-    // Remove @theme inline { ... } blocks
-    final cleaned = _removeAtThemeBlocks(css);
+    // Comments go first: a brace or a declaration inside one would otherwise
+    // be read as real syntax.
+    final cleaned = _removeAtThemeBlocks(_removeComments(css));
 
     final rootVars = _extractBlock(cleaned, ':root');
     final darkVars = _extractBlock(cleaned, '.dark');
@@ -76,6 +77,30 @@ class CssParser {
       dark: _parseMode(darkVars),
     );
   }
+
+  /// Matches a CSS comment. Comments do not nest, so `/*` runs to the *next*
+  /// `*/` however many `/*` lie between — the same rule a CSS tokenizer uses.
+  static final _commentPattern = RegExp(r'/\*.*?\*/', dotAll: true);
+
+  /// Matches one `--variable: value` declaration.
+  ///
+  /// CSS lets the *last* declaration in a block drop its semicolon, so the
+  /// terminator is either a `;` or the end of the subject string. This pattern
+  /// is applied to one block's contents at a time and is deliberately not
+  /// `multiLine`, so `$` means the closing brace of that block rather than the
+  /// end of any line.
+  static final _declarationPattern = RegExp(
+    r'--([a-zA-Z0-9_-]+)\s*:\s*([^;]+?)\s*(?:;|$)',
+  );
+
+  /// Removes `/* ... */` comments from CSS.
+  ///
+  /// A `/*` with no `*/` after it anywhere is left alone. A CSS tokenizer would
+  /// treat it as running to the end of the file; keeping the text instead means
+  /// a truncated paste still yields a theme rather than silently losing every
+  /// declaration after the stray marker.
+  static String _removeComments(String css) =>
+      css.replaceAll(_commentPattern, '');
 
   /// Removes `@theme inline { ... }` blocks from CSS.
   static String _removeAtThemeBlocks(String css) {
@@ -155,9 +180,7 @@ class CssParser {
 
       final blockContent = css.substring(braceStart + 1, braceEnd);
 
-      // Extract --variable: value; pairs
-      final varPattern = RegExp(r'--([a-zA-Z0-9_-]+)\s*:\s*([^;]+);');
-      for (final match in varPattern.allMatches(blockContent)) {
+      for (final match in _declarationPattern.allMatches(blockContent)) {
         vars[match.group(1)!] = match.group(2)!.trim();
       }
 
