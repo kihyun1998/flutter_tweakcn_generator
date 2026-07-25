@@ -7,3 +7,7 @@ example/web/
 example/test/
 example/.dart_tool/
 example/build/
+
+# Agent tooling config — not useful to package consumers
+CLAUDE.md
+docs/
