@@ -23,6 +23,40 @@ void main() {
       );
     });
 
+    test('covers every shape the theme class writes a font as', () {
+      // Each shape reaches a different branch of the font emission, and only a
+      // compiler can tell whether what it wrote is valid: a stray parenthesis
+      // in the `.apply(...)` template, or a GoogleFonts method name derived
+      // from a family that does not exist under that name.
+      final emitted = cases.map(generateCase).toList();
+
+      expect(
+        emitted,
+        contains(
+          allOf(
+            contains('textTheme: GoogleFonts.'),
+            isNot(contains('.apply(')),
+          ),
+        ),
+        reason: 'no case reaches the single Google Font branch',
+      );
+      expect(
+        emitted,
+        contains(contains('.apply(')),
+        reason: 'no case reaches the Google Fonts fallback branch',
+      );
+      expect(
+        emitted,
+        contains(contains('fontFamilyFallback: [')),
+        reason: 'no case reaches the local font fallback branch',
+      );
+      expect(
+        emitted,
+        contains(isNot(contains('fontFamily'))),
+        reason: 'no case reaches the branch that writes no font at all',
+      );
+    });
+
     test('every case carries CSS the parser can read', () {
       for (final verificationCase in cases) {
         expect(

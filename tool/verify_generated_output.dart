@@ -47,12 +47,27 @@ class VerificationCase {
   /// The tweakcn CSS to generate from.
   final String css;
 
+  /// The font mode to generate under: `'google_fonts'`, `'local'`, or
+  /// `'custom'`.
+  ///
+  /// The mode decides how the theme class names its font, and each way it can
+  /// name one is a separate thing that has to compile.
+  final String fontMode;
+
   const VerificationCase({
     required this.name,
     required this.rationale,
     required this.css,
+    this.fontMode = 'google_fonts',
   });
 }
+
+/// The Dart source [verificationCase] must compile to.
+String generateCase(VerificationCase verificationCase) =>
+    DartThemeGenerator(
+      CssParser.parse(verificationCase.css),
+      fontMode: verificationCase.fontMode,
+    ).generate();
 
 /// The directory, relative to the example app, that generated cases are
 /// written to.
@@ -113,6 +128,34 @@ List<VerificationCase> verificationCases(Directory repoRoot) => [
 }
 ''',
   ),
+  // The cases above all name at most one font under the default mode, which
+  // leaves most of the font emission uncompiled. The unit tests do reach those
+  // branches, but they compare the emitted text against text — they cannot
+  // tell a balanced `.apply(...)` from an unbalanced one, or a real
+  // `GoogleFonts` method from a plausible-looking name.
+  const VerificationCase(
+    name: 'google_font_fallback_theme',
+    rationale: 'two Google Fonts: the generated .apply() fallback chain',
+    css: '''
+:root {
+  --background: #ffffff;
+  --primary: #171717;
+  --font-sans: 'Architects Daughter', 'Noto Sans KR', sans-serif;
+}
+''',
+  ),
+  const VerificationCase(
+    name: 'local_font_theme',
+    rationale: 'two local fonts: fontFamily and fontFamilyFallback, no import',
+    fontMode: 'local',
+    css: '''
+:root {
+  --background: #ffffff;
+  --primary: #171717;
+  --font-sans: 'Architects Daughter', 'Noto Sans KR', sans-serif;
+}
+''',
+  ),
 ];
 
 /// Generates [cases] into [target], one file each, and returns what it wrote.
@@ -126,9 +169,7 @@ List<File> writeGeneratedCases(Directory target, List<VerificationCase> cases) {
   return [
     for (final verificationCase in cases)
       File(p.join(target.path, '${verificationCase.name}.g.dart'))
-        ..writeAsStringSync(
-          DartThemeGenerator(CssParser.parse(verificationCase.css)).generate(),
-        ),
+        ..writeAsStringSync(generateCase(verificationCase)),
   ];
 }
 

@@ -319,15 +319,18 @@ cd example && flutter pub get && cd ..
 dart run tool/verify_generated_output.dart
 ```
 
-It generates a theme for four inputs — a complete theme, a minimal one, one
-with no colors at all, and one that defines only the `.dark` block — analyzes
+It generates a theme for the inputs that stress the generator differently — a
+complete theme, a minimal one, one with no colors at all, one that defines only
+the `.dark` block, and one per way the theme class can name a font — analyzes
 them inside `example/` where `package:flutter` resolves, and deletes them
 again. It exits non-zero and reprints the analyzer's own message when any of
 them fails to compile.
 
-Run it whenever you change what the generator emits. `dart test` will not catch
-a generated file that does not build — including one broken by a new Flutter
-release adding a `required` parameter to `ColorScheme`.
+Run it whenever you change what the generator emits. `dart test` compares the
+emitted text against text, so it cannot catch a generated file that does not
+build: a `ColorScheme` missing a parameter a new Flutter release made
+`required`, an unbalanced `textTheme: ...apply(...)`, or a `GoogleFonts` method
+name derived from a family that the package does not spell that way.
 
 ## License
 
