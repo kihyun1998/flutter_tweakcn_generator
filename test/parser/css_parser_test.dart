@@ -325,6 +325,179 @@ void main() {
     });
   });
 
+  group('CssParser with more than one block per selector', () {
+    test('merges every :root block', () {
+      final result = CssParser.parse('''
+:root {
+  --primary: #ff0000;
+}
+
+:root {
+  --secondary: #00ff00;
+}
+''');
+
+      expect(result.light.colors['primary'], 0xFFFF0000);
+      expect(result.light.colors['secondary'], 0xFF00FF00);
+    });
+
+    test('merges a :root nested inside an at-rule', () {
+      final result = CssParser.parse('''
+:root {
+  --primary: #ff0000;
+}
+
+@layer base {
+  :root {
+    --secondary: #00ff00;
+  }
+}
+''');
+
+      expect(result.light.colors['primary'], 0xFFFF0000);
+      expect(result.light.colors['secondary'], 0xFF00FF00);
+    });
+
+    test('lets a later block override an earlier one', () {
+      final result = CssParser.parse('''
+:root {
+  --primary: #ff0000;
+  --radius: 0.5rem;
+}
+
+:root {
+  --primary: #0000ff;
+}
+''');
+
+      expect(result.light.colors['primary'], 0xFF0000FF);
+      // Tokens the later block does not mention survive.
+      expect(result.light.radius, 8.0);
+    });
+
+    test('merges every .dark block', () {
+      final result = CssParser.parse('''
+:root { --primary: #ff0000; }
+
+.dark {
+  --primary: #00ff00;
+}
+
+@layer theme {
+  .dark {
+    --secondary: #0000ff;
+  }
+}
+''');
+
+      expect(result.dark.colors['primary'], 0xFF00FF00);
+      expect(result.dark.colors['secondary'], 0xFF0000FF);
+    });
+
+    test('a conditional at-rule does not override what always applies', () {
+      final result = CssParser.parse('''
+:root {
+  --primary: #0000ff;
+  --font-sans: Inter, sans-serif;
+}
+
+@media print {
+  :root {
+    --primary: #000000;
+    --font-sans: Georgia, serif;
+  }
+}
+''');
+
+      // A print override is not what any screen renders, and letting it win
+      // would point font handling at a family the theme never uses.
+      expect(result.light.colors['primary'], 0xFF0000FF);
+      expect(result.light.fontSans, 'Inter, sans-serif');
+    });
+
+    test('falls back to a conditional block when it is all there is', () {
+      final result = CssParser.parse('''
+@media (prefers-color-scheme: dark) {
+  .dark {
+    --primary: #00ff00;
+  }
+}
+''');
+
+      expect(result.dark.colors['primary'], 0xFF00FF00);
+    });
+
+    test('reads a selector list that includes the selector', () {
+      final result = CssParser.parse('''
+.dark, .dark * {
+  --primary: #00ff00;
+}
+''');
+
+      expect(result.dark.colors['primary'], 0xFF00FF00);
+    });
+
+    test('reads a qualified selector such as html.dark', () {
+      final result = CssParser.parse('''
+html.dark {
+  --primary: #00ff00;
+}
+''');
+
+      expect(result.dark.colors['primary'], 0xFF00FF00);
+    });
+
+    test('survives a block that is never closed', () {
+      final result = CssParser.parse(':root { --primary: #ff0000;');
+
+      expect(result.light.colors['primary'], 0xFFFF0000);
+    });
+
+    test('does not treat a descendant selector as the block', () {
+      final result = CssParser.parse('''
+.dark .card {
+  --primary: #ff0000;
+}
+''');
+
+      expect(result.dark.colors, isEmpty);
+    });
+
+    test('keeps the real block when a descendant selector also appears', () {
+      final result = CssParser.parse('''
+.dark {
+  --primary: #00ff00;
+}
+
+.dark .card {
+  --primary: #ff0000;
+}
+''');
+
+      expect(result.dark.colors['primary'], 0xFF00FF00);
+    });
+
+    test('does not treat a :root descendant selector as the block', () {
+      final result = CssParser.parse('''
+:root .card {
+  --primary: #ff0000;
+}
+''');
+
+      expect(result.light.colors, isEmpty);
+    });
+
+    test('ignores a selector that only shares a prefix', () {
+      final result = CssParser.parse('''
+.darkroom {
+  --primary: #ff0000;
+}
+''');
+
+      expect(result.dark.colors, isEmpty);
+    });
+  });
+
   group('CssParser length tokens', () {
     double? radiusOf(String value) =>
         CssParser.parse(':root { --radius: $value; }').light.radius;

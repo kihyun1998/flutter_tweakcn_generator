@@ -1,5 +1,9 @@
 ## Unreleased
 
+- Fix only the first `:root` and `.dark` block being read, so a theme split across blocks — a bare `:root` plus another inside `@layer base`, say — silently lost everything after the first. All blocks are now merged in source order, with later declarations overriding earlier ones
+- A descendant selector such as `.dark .card` is no longer mistaken for the `.dark` block itself, while a selector list (`.dark, .dark *`) and a qualified selector (`html.dark`) are both recognized
+- Declarations inside a conditional at-rule such as `@media print` no longer override the ones that always apply; they are used only when the selector has no unconditional block at all
+
 - Fix `rem` and `em` lengths in `box-shadow` values being used as raw numbers, so a `0.25rem` offset generated 0.25px instead of 4px — a 16× error against the same unit in `--radius`. Radii, spacing and shadows now share one length conversion
 - `--radius` and `--spacing` accept `em` as well as `rem`, accept units in any case, and no longer accept malformed values such as `1px2`
 

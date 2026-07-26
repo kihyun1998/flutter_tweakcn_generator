@@ -3,6 +3,10 @@ import 'color_parser.dart';
 import 'css_length.dart';
 import 'shadow_parser.dart';
 
+/// One `selector { ... }` rule, and whether it only applies in some
+/// conditions.
+typedef _Rule = ({String prelude, String body, bool conditional});
+
 /// Parses tweakcn CSS into [TweakcnThemeData].
 ///
 /// Extracts design tokens from `:root { }` (light) and `.dark { }` (dark)
@@ -124,71 +128,128 @@ class CssParser {
         break;
       }
 
-      // Find matching closing brace
-      var depth = 0;
-      var j = braceStart;
-      for (; j < css.length; j++) {
-        if (css[j] == '{') depth++;
-        if (css[j] == '}') {
-          depth--;
-          if (depth == 0) break;
-        }
-      }
-      i = j + 1;
+      i = _matchingBrace(css, braceStart) + 1;
     }
 
     return buffer.toString();
   }
 
-  /// Extracts CSS variables from a block identified by [selector].
+  /// At-rules whose contents apply only sometimes. A theme generator renders
+  /// one stylesheet, so what these hold must not override what always applies.
+  static const _conditionalAtRules = {'@media', '@supports', '@container'};
+
+  /// Extracts CSS variables from every block [selector] owns.
+  ///
+  /// A selector may appear more than once — a bare `:root` alongside another
+  /// inside `@layer base`, say. Those blocks are merged in source order so a
+  /// later declaration overrides an earlier one, as a browser resolves them.
+  ///
+  /// Blocks inside a conditional at-rule are used only when the selector has
+  /// no unconditional block at all. Otherwise a `@media print` override would
+  /// become the theme, which is not what any screen would render.
   static Map<String, String> _extractBlock(String css, String selector) {
+    final matching =
+        _rulesIn(
+          css,
+          0,
+          css.length,
+          conditional: false,
+        ).where((rule) => _appliesTo(rule.prelude, selector)).toList();
+
+    final unconditional = matching.where((r) => !r.conditional).toList();
+    final chosen = unconditional.isNotEmpty ? unconditional : matching;
+
     final vars = <String, String>{};
-
-    // Find the selector
-    var searchFrom = 0;
-    while (true) {
-      final selectorIndex = css.indexOf(selector, searchFrom);
-      if (selectorIndex < 0) break;
-
-      // Check it's not part of a larger word
-      final afterSelector = selectorIndex + selector.length;
-      if (afterSelector < css.length) {
-        final nextChar = css[afterSelector];
-        if (nextChar != ' ' &&
-            nextChar != '{' &&
-            nextChar != '\n' &&
-            nextChar != '\r' &&
-            nextChar != '\t') {
-          searchFrom = afterSelector;
-          continue;
-        }
-      }
-
-      // Find the opening brace
-      final braceStart = css.indexOf('{', selectorIndex);
-      if (braceStart < 0) break;
-
-      // Find matching closing brace
-      var depth = 0;
-      var braceEnd = braceStart;
-      for (; braceEnd < css.length; braceEnd++) {
-        if (css[braceEnd] == '{') depth++;
-        if (css[braceEnd] == '}') {
-          depth--;
-          if (depth == 0) break;
-        }
-      }
-
-      final blockContent = css.substring(braceStart + 1, braceEnd);
-
-      for (final match in _declarationPattern.allMatches(blockContent)) {
+    for (final rule in chosen) {
+      for (final match in _declarationPattern.allMatches(rule.body)) {
         vars[match.group(1)!] = match.group(2)!.trim();
       }
+    }
+    return vars;
+  }
 
-      break; // Only take the first match
+  /// Whether a rule written as [prelude] styles [selector].
+  ///
+  /// A prelude may list several selectors, and each may be qualified —
+  /// `html.dark` and `.card.dark` are both the dark theme. A descendant
+  /// combinator is not: `.dark .card` styles something inside the dark theme,
+  /// not the theme itself, so its declarations are not the theme's.
+  static bool _appliesTo(String prelude, String selector) => prelude
+      .split(',')
+      .map((part) => part.trim())
+      .any((part) => part.endsWith(selector));
+
+  /// Collects the style rules between [start] and [end], descending through
+  /// at-rules and remembering whether their contents are conditional.
+  static List<_Rule> _rulesIn(
+    String css,
+    int start,
+    int end, {
+    required bool conditional,
+  }) {
+    final rules = <_Rule>[];
+    var preludeStart = start;
+    var i = start;
+
+    while (i < end) {
+      final char = css[i];
+
+      // A prelude runs from the end of the previous statement or block.
+      if (char == ';' || char == '}') {
+        preludeStart = ++i;
+        continue;
+      }
+      if (char != '{') {
+        i++;
+        continue;
+      }
+
+      final prelude = css.substring(preludeStart, i).trim();
+      final close = _matchingBrace(css, i);
+      final bodyEnd = close < end ? close : end;
+
+      if (prelude.startsWith('@')) {
+        rules.addAll(
+          _rulesIn(
+            css,
+            i + 1,
+            bodyEnd,
+            conditional: conditional || _isConditionalAtRule(prelude),
+          ),
+        );
+      } else {
+        rules.add((
+          prelude: prelude,
+          body: css.substring(i + 1, bodyEnd),
+          conditional: conditional,
+        ));
+      }
+
+      i = bodyEnd + 1;
+      preludeStart = i;
     }
 
-    return vars;
+    return rules;
+  }
+
+  /// Whether [prelude] opens an at-rule whose contents apply only sometimes.
+  static bool _isConditionalAtRule(String prelude) {
+    final name = prelude.split(RegExp(r'[\s(]')).first.toLowerCase();
+    return _conditionalAtRules.contains(name);
+  }
+
+  /// The index of the `}` closing the block opened at [braceStart], or the end
+  /// of [css] when the block is never closed.
+  static int _matchingBrace(String css, int braceStart) {
+    var depth = 0;
+    for (var i = braceStart; i < css.length; i++) {
+      if (css[i] == '{') depth++;
+      if (css[i] == '}') {
+        depth--;
+        if (depth == 0) return i;
+      }
+    }
+    return css.length;
   }
 
   /// Converts raw CSS variable map into [ThemeModeData].
