@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Fix `--font-sans` being read from the light theme only, so a CSS file that names its font solely in the `.dark` block got no font at all — no text theme, nothing downloaded, and an empty family list feeding `font_exclusive` cleanup. Detection now prefers light and falls back to dark
+- Warn when light and dark name different font stacks, since a `ThemeData` carries one font family and only the light stack is used
+
 - Fix only the first `:root` and `.dark` block being read, so a theme split across blocks — a bare `:root` plus another inside `@layer base`, say — silently lost everything after the first. All blocks are now merged in source order, with later declarations overriding earlier ones
 - A descendant selector such as `.dark .card` is no longer mistaken for the `.dark` block itself, while a selector list (`.dark, .dark *`) and a qualified selector (`html.dark`) are both recognized
 - Declarations inside a conditional at-rule such as `@media print` no longer override the ones that always apply; they are used only when the selector has no unconditional block at all

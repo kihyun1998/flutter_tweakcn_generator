@@ -12,6 +12,28 @@ class TweakcnThemeData {
   final ThemeModeData dark;
 
   const TweakcnThemeData({required this.light, required this.dark});
+
+  /// The `--font-sans` stack the generated theme uses.
+  ///
+  /// Distinct from [ThemeModeData.fontSans], which is one mode's raw value.
+  ///
+  /// A `ThemeData` carries one font family across both brightnesses, so light
+  /// wins and dark is the fallback: a theme that names its font only in the
+  /// dark block still gets that font rather than none.
+  ///
+  /// A declaration with no value declares nothing — see [_declared].
+  String? get resolvedFontSans => lightFontSans ?? darkFontSans;
+
+  /// The stack the light mode declares, or `null` if it declares none.
+  String? get lightFontSans => _declared(light.fontSans);
+
+  /// The stack the dark mode declares, or `null` if it declares none.
+  String? get darkFontSans => _declared(dark.fontSans);
+
+  /// Treats a missing or blank value alike: `--font-sans: ;` parses to an
+  /// empty string, which names no font.
+  static String? _declared(String? value) =>
+      (value != null && value.trim().isNotEmpty) ? value : null;
 }
 
 /// Parsed design tokens for a single theme mode (light or dark).

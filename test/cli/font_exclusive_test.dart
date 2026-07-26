@@ -2,15 +2,14 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
+import 'cli_harness.dart';
+
 /// End-to-end tests for the `font_exclusive` cleanup step in the CLI.
 ///
 /// These run the real entrypoint in a throwaway project directory, because the
 /// decision of *whether* to clean lives in the CLI wiring rather than in the
 /// cleanup primitives.
 void main() {
-  final repoRoot = Directory.current.path;
-  final packageConfig = '$repoRoot/.dart_tool/package_config.json';
-
   late Directory projectDir;
 
   setUp(() {
@@ -56,22 +55,27 @@ flutter:
     ).writeAsBytesSync([0, 1, 2]);
   }
 
-  ProcessResult runGenerator() {
-    return Process.runSync('dart', [
-      'run',
-      '--packages=$packageConfig',
-      '$repoRoot/bin/flutter_tweakcn_generator.dart',
-    ], workingDirectory: projectDir.path);
-  }
-
   String readPubspec() =>
       File('${projectDir.path}/pubspec.yaml').readAsStringSync();
 
   bool fontExists() =>
       File('${projectDir.path}/fonts/MyFont-Regular.ttf').existsSync();
 
-  // `--font-sans` is declared only in `.dark`, so the CLI detects no font
-  // families even though the CSS clearly names a font.
+  // No `--font-sans` anywhere, so the CLI detects no font families at all.
+  const cssNoFontSans = '''
+:root {
+  --background: #ffffff;
+  --primary: #ff0000;
+}
+
+.dark {
+  --background: #000000;
+  --primary: #00ff00;
+}
+''';
+
+  // `--font-sans` is declared only in `.dark`. It is still the theme's font,
+  // so detection finds it and cleanup runs normally.
   const cssFontOnlyInDark = '''
 :root {
   --background: #ffffff;
@@ -108,10 +112,10 @@ flutter:
     for (final fontMode in ['local', 'custom']) {
       group('font_mode: $fontMode', () {
         test('keeps fonts when no font stack was detected', () {
-          writeProject(fontMode: fontMode, css: cssFontOnlyInDark);
+          writeProject(fontMode: fontMode, css: cssNoFontSans);
           final before = readPubspec();
 
-          final result = runGenerator();
+          final result = runGeneratorIn(projectDir);
 
           expect(result.exitCode, 0);
           expect(fontExists(), isTrue, reason: 'user font files must survive');
@@ -123,7 +127,7 @@ flutter:
           writeProject(fontMode: fontMode, css: cssBlankFontSans);
           final before = readPubspec();
 
-          final result = runGenerator();
+          final result = runGeneratorIn(projectDir);
 
           expect(result.exitCode, 0);
           expect(fontExists(), isTrue, reason: 'user font files must survive');
@@ -134,7 +138,7 @@ flutter:
         test('still cleans up when the CSS declares a system font stack', () {
           writeProject(fontMode: fontMode, css: cssSystemFontStack);
 
-          final result = runGenerator();
+          final result = runGeneratorIn(projectDir);
 
           expect(result.exitCode, 0);
           expect(fontExists(), isFalse);
@@ -144,11 +148,11 @@ flutter:
         test('cleans up with no font stack when allow_empty opts in', () {
           writeProject(
             fontMode: fontMode,
-            css: cssFontOnlyInDark,
+            css: cssNoFontSans,
             allowEmpty: true,
           );
 
-          final result = runGenerator();
+          final result = runGeneratorIn(projectDir);
 
           expect(result.exitCode, 0);
           expect(fontExists(), isFalse);
@@ -156,5 +160,54 @@ flutter:
         });
       });
     }
+
+    // Only `custom` mode here: `local` would try to download Inter, and these
+    // tests must not depend on the network.
+    test('cleans up using a font stack declared only in .dark', () {
+      writeProject(fontMode: 'custom', css: cssFontOnlyInDark);
+
+      final result = runGeneratorIn(projectDir);
+
+      // Inter is the theme's font; MyFont is not, so it goes.
+      expect(result.exitCode, 0);
+      expect(fontExists(), isFalse);
+      expect(readPubspec(), isNot(contains('family: MyFont')));
+    });
+
+    test('cleans up for a system font stack declared only in .dark', () {
+      // The riskiest case the dark fallback enables: no Google families
+      // resolve, so cleanup deletes everything it manages. A declaration in
+      // .dark is still a declaration, so this is intended — but it is
+      // unrecoverable under `custom`, and worth pinning.
+      writeProject(
+        fontMode: 'custom',
+        css: '''
+:root { --primary: #ff0000; }
+.dark { --font-sans: ui-sans-serif, system-ui, sans-serif; }
+''',
+      );
+
+      final result = runGeneratorIn(projectDir);
+
+      expect(result.exitCode, 0);
+      expect(fontExists(), isFalse);
+      expect(readPubspec(), isNot(contains('family: MyFont')));
+    });
+
+    test('cleans up when light is blank and dark declares a stack', () {
+      writeProject(
+        fontMode: 'custom',
+        css: '''
+:root { --font-sans: ; }
+.dark { --font-sans: ui-sans-serif, system-ui, sans-serif; }
+''',
+      );
+
+      final result = runGeneratorIn(projectDir);
+
+      // A blank light declaration names nothing, so dark is the theme's word.
+      expect(result.exitCode, 0);
+      expect(fontExists(), isFalse);
+    });
   });
 }

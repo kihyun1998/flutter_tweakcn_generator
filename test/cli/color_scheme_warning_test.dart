@@ -2,12 +2,11 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
+import 'cli_harness.dart';
+
 /// End-to-end tests for the warning the CLI prints when it has to substitute
 /// a color that `ColorScheme` requires but the theme does not define.
 void main() {
-  final repoRoot = Directory.current.path;
-  final packageConfig = '$repoRoot/.dart_tool/package_config.json';
-
   late Directory projectDir;
 
   setUp(() {
@@ -33,14 +32,6 @@ flutter_tweakcn_generator:
     File('${projectDir.path}/theme.css').writeAsStringSync(css);
   }
 
-  ProcessResult runGenerator() {
-    return Process.runSync('dart', [
-      'run',
-      '--packages=$packageConfig',
-      '$repoRoot/bin/flutter_tweakcn_generator.dart',
-    ], workingDirectory: projectDir.path);
-  }
-
   test('names the missing tokens and the mode they belong to', () {
     writeProject('''
 :root {
@@ -50,7 +41,7 @@ flutter_tweakcn_generator:
 }
 ''');
 
-    final result = runGenerator();
+    final result = runGeneratorIn(projectDir);
     final lines = result.stderr.toString().split('\n');
 
     expect(result.exitCode, 0);
@@ -69,11 +60,9 @@ flutter_tweakcn_generator:
   });
 
   test('stays quiet for a theme that defines every required token', () {
-    writeProject(
-      File('$repoRoot/test/fixtures/sample_hex.css').readAsStringSync(),
-    );
+    writeProject(File('test/fixtures/sample_hex.css').readAsStringSync());
 
-    final result = runGenerator();
+    final result = runGeneratorIn(projectDir);
 
     expect(result.exitCode, 0);
     expect(result.stderr.toString(), isNot(contains('ColorScheme')));

@@ -541,6 +541,49 @@ const _lightColorScheme = ColorScheme(
     });
   });
 
+  group('DartThemeGenerator font stack source', () {
+    String generateFrom(String css, {String fontMode = 'google_fonts'}) =>
+        DartThemeGenerator(CssParser.parse(css), fontMode: fontMode).generate();
+
+    test('uses a font stack declared only in the dark block', () {
+      final code = generateFrom('''
+:root { --background: #ffffff; }
+.dark {
+  --background: #000000;
+  --font-sans: Inter, sans-serif;
+}
+''');
+
+      expect(code, contains('GoogleFonts.interTextTheme()'));
+    });
+
+    test('prefers the light stack when both declare one', () {
+      final code = generateFrom('''
+:root { --font-sans: Inter, sans-serif; }
+.dark { --font-sans: Roboto, sans-serif; }
+''');
+
+      expect(code, contains('GoogleFonts.interTextTheme()'));
+      expect(code, isNot(contains('roboto')));
+    });
+
+    test('uses a dark-only stack for fontFamily in custom mode', () {
+      final code = generateFrom('''
+:root { --background: #ffffff; }
+.dark { --font-sans: 'My Custom Font', sans-serif; }
+''', fontMode: 'custom');
+
+      expect(code, contains("fontFamily: 'My Custom Font'"));
+    });
+
+    test('generates no text theme when neither block declares one', () {
+      final code = generateFrom(':root { --background: #ffffff; }');
+
+      expect(code, isNot(contains('google_fonts')));
+      expect(code, isNot(contains('textTheme:')));
+    });
+  });
+
   group('DartThemeGenerator ColorScheme completeness', () {
     // Every parameter Flutter's ColorScheme constructor marks `required`.
     const requiredParameters = [

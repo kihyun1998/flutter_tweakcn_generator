@@ -61,8 +61,25 @@ Future<void> main(List<String> args) async {
 
   // Font handling based on fontMode
   final googleFonts = DartThemeGenerator.extractGoogleFontNames(
-    themeData.light.fontSans,
+    themeData.resolvedFontSans,
   );
+
+  if (themeData.lightFontSans != null && themeData.darkFontSans != null) {
+    // ThemeData carries one font family across both brightnesses, so only the
+    // light stack survives. Two stacks that resolve to the same families lose
+    // nothing, so compare the families rather than the CSS text. Font names
+    // cannot contain a comma, so joining them is an unambiguous comparison.
+    final darkFonts = DartThemeGenerator.extractGoogleFontNames(
+      themeData.darkFontSans,
+    );
+    if (googleFonts.join(',') != darkFonts.join(',')) {
+      stderr.writeln(
+        'Warning: light and dark declare different --font-sans. '
+        'Using the light stack (${themeData.lightFontSans}); '
+        'the dark stack (${themeData.darkFontSans}) is ignored.',
+      );
+    }
+  }
 
   if (config.fontMode == 'custom' && googleFonts.isNotEmpty) {
     // Custom mode: scan local .ttf files provided by the user
@@ -154,24 +171,23 @@ Future<void> main(List<String> args) async {
     // An empty font list has two very different causes. A theme that declares
     // a system font stack (`ui-sans-serif, system-ui, ...`) legitimately
     // resolves to no font families, and the fonts left over from a previous
-    // run should go. A theme where `--font-sans` was never found — or was
-    // found blank — is a detection failure, and deleting the user's font files
-    // on that basis is unrecoverable in `custom` mode.
-    final fontStackDeclared =
-        themeData.light.fontSans?.trim().isNotEmpty ?? false;
+    // run should go. A theme where `--font-sans` was never found — in either
+    // mode — or was found blank is a detection failure, and deleting the
+    // user's font files on that basis is unrecoverable in `custom` mode.
+    final fontStackDeclared = themeData.resolvedFontSans != null;
     final allowEmpty = fontStackDeclared || config.fontExclusiveAllowEmpty;
 
     if (googleFonts.isEmpty && !allowEmpty) {
       stderr.writeln(
         'Warning: skipping font_exclusive cleanup — no --font-sans was found '
-        'in the :root block of ${config.input}.',
+        'in ${config.input}.',
       );
       stderr.writeln(
         '  Cleaning up now would delete every font file in ${config.fontDir}/ '
         'and every font declaration in pubspec.yaml.',
       );
       stderr.writeln(
-        '  Declare --font-sans in :root, set font_exclusive: false if you '
+        '  Declare --font-sans, set font_exclusive: false if you '
         'manage fonts yourself, or set font_exclusive_allow_empty: true to '
         'clean up anyway.',
       );
@@ -237,7 +253,7 @@ Future<void> main(List<String> args) async {
       } else {
         stdout.writeln('  Font: ${fontMatch.group(1)} (google_fonts)');
       }
-    } else if (themeData.light.fontSans != null) {
+    } else if (themeData.resolvedFontSans != null) {
       stdout.writeln('  Font: system default');
     }
   }
