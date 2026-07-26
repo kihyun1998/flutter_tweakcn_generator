@@ -93,21 +93,38 @@ Future<void> main(List<String> args) async {
   } else if (config.fontMode == 'local' && googleFonts.isNotEmpty) {
     // Local mode: download .ttf files and update pubspec.yaml
     final fontsDir = p.join(projectDir, config.fontDir);
-    final allDownloaded = <DownloadedFont>[];
+    final reports = <FontDownloadReport>[];
 
     for (final fontName in googleFonts) {
       stdout.writeln('Downloading font: $fontName');
-      final downloaded = await FontDownloader.download(
-        fontName,
-        fontsDir,
-        relativeDir: config.fontDir,
+      reports.add(
+        await FontDownloader.download(
+          fontName,
+          fontsDir,
+          relativeDir: config.fontDir,
+        ),
       );
-      allDownloaded.addAll(downloaded);
     }
 
-    if (allDownloaded.isNotEmpty) {
+    final report = FontDownloadReport.merge(reports);
+    stdout.writeln('  Fonts: ${report.summary}');
+
+    if (report.hasFailures) {
+      // Only what is on disk gets declared, so the build will not fail on a
+      // missing asset — but the theme is short of what failed.
+      stderr.writeln(
+        'Error: ${report.failures.length} font file(s) could not be '
+        'downloaded and were left out of pubspec.yaml:',
+      );
+      for (final failure in report.failures) {
+        stderr.writeln('  $failure');
+      }
+      exitCode = 1;
+    }
+
+    if (report.fonts.isNotEmpty) {
       final pubspecPath = p.join(projectDir, 'pubspec.yaml');
-      PubspecFontAdder.addFonts(pubspecPath, allDownloaded);
+      PubspecFontAdder.addFonts(pubspecPath, report.fonts);
       stdout.writeln('Updated pubspec.yaml with font declarations');
     }
   } else if (dartCode.contains("package:google_fonts/google_fonts.dart")) {

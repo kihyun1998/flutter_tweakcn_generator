@@ -1,5 +1,12 @@
 ## Unreleased
 
+- Fix a font that failed to download still being declared in `pubspec.yaml`, which turned into an asset-not-found error on the next Flutter build with nothing to connect it back to the download. Only files present on disk are declared
+- Font files are written to a part file and renamed once complete, so an interrupted transfer cannot leave behind something a later run mistakes for a finished font
+- A failed download is now reported as an error, counted in the run summary alongside downloaded and already-present files, and makes the CLI exit non-zero
+- A font family the Google Fonts API does not serve no longer aborts the whole run with an unhandled exception before the theme is written; it is reported as a failed download like any other
+- Font requests now time out after 30 seconds instead of hanging the generator indefinitely on a stalled server
+- **Breaking (library API):** `FontDownloader.download` returns a `FontDownloadReport` rather than a `List<DownloadedFont>`. The declarable fonts are on `report.fonts`
+
 - Fix `font_exclusive` cleanup keeping the files of a family whose name merely extends a defined one. Cleanup now takes each file's family from the `flutter > fonts` declarations in pubspec.yaml rather than guessing from the file name, so defining only `Roboto` removes a leftover `RobotoSlab-Bold.ttf` while leaving an `InterVariable.ttf` that `Inter` really does own. Files pubspec has never declared are still matched by name, which errs toward keeping them
 - `CustomFontScanner` no longer claims a file that pubspec already declares under another family, so a leftover file is not re-declared under the wrong family and made permanently uncleanable
 - Font file names are now matched case-insensitively, so a hand-named `inter-bold.ttf` is recognized as `Inter`'s rather than deleted as an unknown family's, and `.TTF` files are treated as fonts. Note that an unused `.TTF` file is now removed by cleanup where it was previously left in place
