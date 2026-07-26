@@ -1,4 +1,5 @@
 import 'color_parser.dart';
+import 'css_length.dart';
 
 /// A single parsed CSS `box-shadow` layer.
 ///
@@ -134,13 +135,7 @@ class ShadowParser {
     );
   }
 
-  static List<double> _parseNumericValues(String s) {
-    final matches = RegExp(r'-?[\d.]+(?:px|rem|em)?').allMatches(s);
-    return matches.map((m) {
-      var val = m.group(0)!;
-      // Strip units
-      val = val.replaceAll(RegExp(r'px|rem|em'), '');
-      return double.tryParse(val) ?? 0;
-    }).toList();
-  }
+  /// A shadow's lengths mean the same thing as the radius token's, so finding
+  /// and converting them is [CssLength]'s job: `0.25rem` is 4px in both.
+  static List<double> _parseNumericValues(String s) => CssLength.findAll(s);
 }

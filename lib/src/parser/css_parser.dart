@@ -1,5 +1,6 @@
 import '../models/tweakcn_theme_data.dart';
 import 'color_parser.dart';
+import 'css_length.dart';
 import 'shadow_parser.dart';
 
 /// Parses tweakcn CSS into [TweakcnThemeData].
@@ -11,8 +12,8 @@ import 'shadow_parser.dart';
 /// Recognized tokens:
 /// - **Colors**: 32 named color variables (e.g. `--primary`, `--background`)
 /// - **Shadows**: 8 shadow levels (`--shadow-2xs` through `--shadow-2xl`)
-/// - **Radius**: `--radius` (rem → px conversion)
-/// - **Spacing**: `--spacing` (rem → px conversion)
+/// - **Radius**: `--radius` (CSS length → logical pixels)
+/// - **Spacing**: `--spacing` (CSS length → logical pixels)
 /// - **Font**: `--font-sans` (raw CSS font stack)
 class CssParser {
   /// CSS variable names that represent colors.
@@ -209,9 +210,9 @@ class CssParser {
         final parsed = ShadowParser.parse(value);
         if (parsed.isNotEmpty) shadows[name] = parsed;
       } else if (name == 'radius') {
-        radius = _parseRemToPixels(value);
+        radius = CssLength.toPixels(value);
       } else if (name == 'spacing') {
-        spacing = _parseRemToPixels(value);
+        spacing = CssLength.toPixels(value);
       } else if (name == 'font-sans') {
         fontSans = value;
       }
@@ -224,18 +225,5 @@ class CssParser {
       shadows: shadows,
       fontSans: fontSans,
     );
-  }
-
-  /// Converts rem value to pixels (1rem = 16px).
-  static double? _parseRemToPixels(String value) {
-    final trimmed = value.trim();
-    if (trimmed.endsWith('rem')) {
-      final num = double.tryParse(
-        trimmed.substring(0, trimmed.length - 3).trim(),
-      );
-      return num != null ? num * 16 : null;
-    }
-    // Try plain number (assume px)
-    return double.tryParse(trimmed.replaceAll('px', ''));
   }
 }

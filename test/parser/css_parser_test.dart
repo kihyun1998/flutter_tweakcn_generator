@@ -324,4 +324,31 @@ void main() {
       expect(result.light.colors['primary'], 0xFFFF0000);
     });
   });
+
+  group('CssParser length tokens', () {
+    double? radiusOf(String value) =>
+        CssParser.parse(':root { --radius: $value; }').light.radius;
+
+    test('converts rem and em alike', () {
+      expect(radiusOf('0.5rem'), 8.0);
+      expect(radiusOf('0.5em'), 8.0);
+    });
+
+    test('keeps px and unitless values', () {
+      expect(radiusOf('12px'), 12.0);
+      expect(radiusOf('12'), 12.0);
+    });
+
+    test('accepts signs and exponents CSS numbers allow', () {
+      expect(radiusOf('+1rem'), 16.0);
+      expect(radiusOf('-4px'), -4.0);
+      expect(radiusOf('1e3'), 1000.0);
+    });
+
+    test('rejects a value that is not a length', () {
+      expect(radiusOf('1px2'), isNull);
+      expect(radiusOf('50%'), isNull);
+      expect(radiusOf('auto'), isNull);
+    });
+  });
 }

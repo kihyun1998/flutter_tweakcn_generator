@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Fix `rem` and `em` lengths in `box-shadow` values being used as raw numbers, so a `0.25rem` offset generated 0.25px instead of 4px — a 16× error against the same unit in `--radius`. Radii, spacing and shadows now share one length conversion
+- `--radius` and `--spacing` accept `em` as well as `rem`, accept units in any case, and no longer accept malformed values such as `1px2`
+
 - Fix a font that failed to download still being declared in `pubspec.yaml`, which turned into an asset-not-found error on the next Flutter build with nothing to connect it back to the download. Only files present on disk are declared
 - Font files are written to a part file and renamed once complete, so an interrupted transfer cannot leave behind something a later run mistakes for a finished font
 - A failed download is now reported as an error, counted in the run summary alongside downloaded and already-present files, and makes the CLI exit non-zero
