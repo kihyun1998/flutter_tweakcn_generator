@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Scratch output of `dart run tool/verify_generated_output.dart`, which removes
+# it on its own. Ignored so a run killed part-way cannot get committed.
+/tweakcn_verify/

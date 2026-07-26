@@ -304,6 +304,31 @@ No additional configuration needed. Network access is allowed by default.
 
 - [Using with Riverpod](doc/riverpod.md)
 
+## Development
+
+```bash
+dart test    # the generator's own test suite
+```
+
+The suite checks the *text* the generator emits. It cannot check that the text
+compiles, because this package generates Flutter source without depending on
+Flutter. That takes a second command:
+
+```bash
+cd example && flutter pub get && cd ..
+dart run tool/verify_generated_output.dart
+```
+
+It generates a theme for four inputs — a complete theme, a minimal one, one
+with no colors at all, and one that defines only the `.dark` block — analyzes
+them inside `example/` where `package:flutter` resolves, and deletes them
+again. It exits non-zero and reprints the analyzer's own message when any of
+them fails to compile.
+
+Run it whenever you change what the generator emits. `dart test` will not catch
+a generated file that does not build — including one broken by a new Flutter
+release adding a `required` parameter to `ColorScheme`.
+
 ## License
 
 MIT

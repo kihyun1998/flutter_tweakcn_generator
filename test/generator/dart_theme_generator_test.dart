@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter_tweakcn_generator/src/generator/color_scheme_resolver.dart';
 import 'package:flutter_tweakcn_generator/src/generator/dart_theme_generator.dart';
 import 'package:flutter_tweakcn_generator/src/parser/css_parser.dart';
 import 'package:test/test.dart';
@@ -585,17 +586,18 @@ const _lightColorScheme = ColorScheme(
   });
 
   group('DartThemeGenerator ColorScheme completeness', () {
-    // Every parameter Flutter's ColorScheme constructor marks `required`.
+    // Every parameter Flutter's ColorScheme constructor marks `required`,
+    // taken from the resolver rather than hand-copied so the two cannot
+    // disagree about what the generator owes. `brightness` is required too but
+    // is written straight from the mode, so the resolver does not carry it.
+    //
+    // No list inside this suite can know that a future Flutter release added a
+    // required parameter — the package does not depend on Flutter. That is
+    // what `dart run tool/verify_generated_output.dart` is for: it compiles
+    // the generated output against the real SDK.
     const requiredParameters = [
       'brightness',
-      'primary',
-      'onPrimary',
-      'secondary',
-      'onSecondary',
-      'error',
-      'onError',
-      'surface',
-      'onSurface',
+      ...ColorSchemeResolver.requiredProperties,
     ];
 
     String generateFrom(String css) =>
