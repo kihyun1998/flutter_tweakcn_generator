@@ -160,10 +160,14 @@ import 'package:flutter_tweakcn_generator/flutter_tweakcn_generator.dart';
 import 'theme/tweakcn_theme.g.dart';
 
 final theme = CssParser.parse(css);
-final colors = TweakcnColors.fromMap(theme.light.colors);
 
 MaterialApp(
-  theme: ThemeData(extensions: [colors]),
+  theme: ThemeData(
+    extensions: [
+      TweakcnColors.fromMap(theme.light.colors),
+      TweakcnRadius.fromRadius(theme.light.radius ?? theme.dark.radius),
+    ],
+  ),
 );
 ```
 
@@ -172,6 +176,13 @@ to 32-bit ARGB — and covers exactly the tokens the generator writes, so it
 keeps covering them when tokens are added. A token the CSS does not define gets
 the same transparent placeholder the generated constants use, which means
 building from a theme's own tokens reproduces that theme's constants.
+
+`fromRadius` derives the four steps the same way the generated constant does:
+`lg` is the radius itself, `md` two less, `sm` four less, `xl` four more, and
+no step goes below zero. Pass `null` for a theme that declares no `--radius`
+and it falls back to the same base the constant was built from. A `ThemeData`
+carries one radius, so hand it light's and fall back to dark's, exactly as the
+generator does.
 
 Its parameter and return types name nothing from this package, so the generated
 file keeps importing Flutter and nothing else, and passing it around costs you

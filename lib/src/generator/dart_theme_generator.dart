@@ -257,9 +257,24 @@ class DartThemeGenerator {
 
   // -- TweakcnRadius --------------------------------------------------------
 
+  /// The base radius used when the CSS declares none.
+  ///
+  /// Named once because the baked-in constant and the runtime factory both
+  /// fall back to it, and a theme that declares no radius has to reach the
+  /// same four steps either way.
+  static const _defaultRadius = 8.0;
+
+  /// Holds a step at zero rather than letting it go negative.
+  ///
+  /// Applied to `sm` and `md`, the two steps that sit below the base radius
+  /// and so are the two a small radius can drive past zero. `lg` and `xl` are
+  /// left as they are: a radius that is itself negative is the theme's own
+  /// doing, and quietly correcting it here would hide it.
+  static double _atLeastZero(double value) => value < 0 ? 0 : value;
+
   void _writeRadiusExtension(StringBuffer buf) {
     final cls = '${classPrefix}Radius';
-    final radius = data.light.radius ?? data.dark.radius ?? 8.0;
+    final radius = data.light.radius ?? data.dark.radius ?? _defaultRadius;
 
     buf.writeln('// ──────────────────────────────────────────');
     buf.writeln('// $cls (ThemeExtension)');
@@ -282,18 +297,14 @@ class DartThemeGenerator {
     buf.writeln('  });');
     buf.writeln();
 
-    // Standard instance (based on radius token)
-    // Follows shadcn convention: lg = radius, md = radius - 2, sm = radius - 4, xl = radius + 4
-    final lg = radius;
-    final md = (radius - 2).clamp(0.0, double.infinity);
-    final sm = (radius - 4).clamp(0.0, double.infinity);
-    final xl = radius + 4;
+    _writeRadiusFromRadius(buf, cls, radius);
 
+    // Standard instance (based on radius token)
     buf.writeln('  static const standard = $cls(');
-    buf.writeln('    sm: $sm,');
-    buf.writeln('    md: $md,');
-    buf.writeln('    lg: $lg,');
-    buf.writeln('    xl: $xl,');
+    buf.writeln('    sm: ${_atLeastZero(radius - 4)},');
+    buf.writeln('    md: ${_atLeastZero(radius - 2)},');
+    buf.writeln('    lg: $radius,');
+    buf.writeln('    xl: ${radius + 4},');
     buf.writeln('  );');
     buf.writeln();
 
@@ -327,6 +338,38 @@ class DartThemeGenerator {
     buf.writeln('  }');
 
     buf.writeln('}');
+    buf.writeln();
+  }
+
+  /// Writes the factory that derives the four steps from a parsed radius.
+  ///
+  /// The derivation lived only in this generator, so a consumer building a
+  /// theme from CSS parsed at runtime had to reimplement the arithmetic and
+  /// would drift from it if it ever changed.
+  void _writeRadiusFromRadius(StringBuffer buf, String cls, double radius) {
+    buf.writeln('  /// Builds $cls from a parsed radius, in logical pixels.');
+    buf.writeln('  ///');
+    buf.writeln('  /// `lg` is the radius itself, `md` two less, `sm` four');
+    buf.writeln('  /// less and `xl` four more, with `sm` and `md` held at');
+    buf.writeln('  /// zero rather than going negative.');
+    buf.writeln('  ///');
+    buf.writeln('  /// Null means the theme declares no `--radius`, which');
+    buf.writeln('  /// falls back to $_defaultRadius. [standard] is what this');
+    buf.writeln(
+      '  /// returns for $radius, the radius this theme resolved to.',
+    );
+    buf.writeln('  factory $cls.fromRadius(double? radius) {');
+    buf.writeln('    final base = radius ?? $_defaultRadius;');
+    buf.writeln('    double atLeastZero(double value) =>');
+    buf.writeln('        value < 0 ? 0 : value;');
+    buf.writeln();
+    buf.writeln('    return $cls(');
+    buf.writeln('      sm: atLeastZero(base - 4),');
+    buf.writeln('      md: atLeastZero(base - 2),');
+    buf.writeln('      lg: base,');
+    buf.writeln('      xl: base + 4,');
+    buf.writeln('    );');
+    buf.writeln('  }');
     buf.writeln();
   }
 

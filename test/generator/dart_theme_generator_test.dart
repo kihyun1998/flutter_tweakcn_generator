@@ -155,6 +155,82 @@ const _lightColorScheme = ColorScheme(
       expect(generatedCode, contains('TweakcnRadius lerp('));
     });
 
+    test('generates a runtime factory over the parsed radius', () {
+      // Nullable because the CSS need not define a radius, and the caller
+      // should not have to know what the generator falls back to when it
+      // does not — that is the arithmetic this factory exists to own.
+      expect(
+        generatedCode,
+        contains('factory TweakcnRadius.fromRadius(double? radius)'),
+      );
+    });
+
+    test('the radius factory falls back to the constant\'s own default', () {
+      final code =
+          DartThemeGenerator(
+            CssParser.parse(':root { --background: #ffffff; }'),
+          ).generate();
+      final standard = _sliceBetween(
+        code,
+        'static const standard = TweakcnRadius(',
+        '  );',
+      );
+      final factory = _sliceBetween(
+        code,
+        'factory TweakcnRadius.fromRadius',
+        '  }',
+      );
+
+      // A theme that declares no radius still generates a constant, from a
+      // default. Absent radius has to reach the same one.
+      expect(standard, contains('lg: 8.0,'));
+      expect(factory, contains('radius ?? 8.0'));
+    });
+
+    test('the radius factory applies the constant\'s own step offsets', () {
+      final factory = _sliceBetween(
+        generatedCode,
+        'factory TweakcnRadius.fromRadius',
+        '  }',
+      );
+
+      // The two steps below the base are held at zero; the base and the step
+      // above it are left alone, because a radius that is itself negative is
+      // the theme's own doing.
+      expect(factory, contains('sm: atLeastZero(base - 4),'));
+      expect(factory, contains('md: atLeastZero(base - 2),'));
+      expect(factory, contains('lg: base,'));
+      expect(factory, contains('xl: base + 4,'));
+    });
+
+    test('a radius smaller than its steps generates no negative one', () {
+      // 0.125rem is 2px, so sm and md would both come out below zero.
+      final code =
+          DartThemeGenerator(
+            CssParser.parse(':root { --radius: 0.125rem; }'),
+          ).generate();
+      final standard = _sliceBetween(
+        code,
+        'static const standard = TweakcnRadius(',
+        '  );',
+      );
+
+      expect(standard, contains('sm: 0.0,'));
+      expect(standard, contains('md: 0.0,'));
+      expect(standard, contains('lg: 2.0,'));
+      expect(standard, contains('xl: 6.0,'));
+    });
+
+    test('the radius factory follows the class prefix', () {
+      final code =
+          DartThemeGenerator(
+            CssParser.parse(':root { --radius: 0.5rem; }'),
+            classPrefix: 'My',
+          ).generate();
+
+      expect(code, contains('factory MyRadius.fromRadius(double? radius)'));
+    });
+
     test('generates TweakcnShadows extension', () {
       expect(
         generatedCode,

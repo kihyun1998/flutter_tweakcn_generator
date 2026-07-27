@@ -394,6 +394,27 @@ class TweakcnRadius extends ThemeExtension<TweakcnRadius> {
     required this.xl,
   });
 
+  /// Builds TweakcnRadius from a parsed radius, in logical pixels.
+  ///
+  /// `lg` is the radius itself, `md` two less, `sm` four
+  /// less and `xl` four more, with `sm` and `md` held at
+  /// zero rather than going negative.
+  ///
+  /// Null means the theme declares no `--radius`, which
+  /// falls back to 8.0. [standard] is what this
+  /// returns for 10.0, the radius this theme resolved to.
+  factory TweakcnRadius.fromRadius(double? radius) {
+    final base = radius ?? 8.0;
+    double atLeastZero(double value) => value < 0 ? 0 : value;
+
+    return TweakcnRadius(
+      sm: atLeastZero(base - 4),
+      md: atLeastZero(base - 2),
+      lg: base,
+      xl: base + 4,
+    );
+  }
+
   static const standard = TweakcnRadius(sm: 6.0, md: 8.0, lg: 10.0, xl: 14.0);
 
   @override
