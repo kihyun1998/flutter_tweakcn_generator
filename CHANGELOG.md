@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Generated theme extensions now compare by value. They previously had no `==`, so an extension equalled only itself — harmless while the only instances were the baked-in constants, since those are `const`, but not once `fromMap`, `fromRadius` and `fromShadowMap` started building a new one per call. `ThemeData` compares its extensions by value, so a theme rebuilt from unchanged tokens did not equal the previous one and every dependent of `Theme.of` rebuilt. Shadow levels are compared and hashed layer by layer, since a list is equal only to itself too
+
 - Font declarations added to a pubspec that uses CRLF line endings now use them too, instead of leaving the file with two kinds
 
 - Fix `font_exclusive` cleanup turning `pubspec.yaml` into invalid YAML on a file with CRLF line endings — the ordinary state of a checkout on Windows. Family declarations were matched with a pattern that cannot see past the `\r`, so every family read as belonging to no family: the declarations were left in place while the `fonts:` key above them was deleted, leaving `flutter:` mapped to a list and everything after it misindented. It fired on runs that had nothing to clean up, reported success, and exited 0. Cleanup now writes each line back with the ending it came in with, so a run that removes nothing leaves the file byte-identical

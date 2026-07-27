@@ -145,6 +145,55 @@ const _lightColorScheme = ColorScheme(
       );
     });
 
+    test('gives every extension value equality over all of its fields', () {
+      // Derived from each class's own constant rather than listed here: a
+      // field the generator adds and equality forgets is exactly the drift
+      // this catches, and a list written out here would forget it too.
+      for (final (cls, constant, compare) in [
+        ('TweakcnColors', 'light', (String f) => '$f == other.$f'),
+        ('TweakcnRadius', 'standard', (String f) => '$f == other.$f'),
+        ('TweakcnShadows', 'light', (String f) => 'listEquals($f, other.$f)'),
+      ]) {
+        final body = _sliceBetween(generatedCode, 'class $cls extends', '\n}');
+        final instance = _sliceBetween(
+          generatedCode,
+          'static const $constant = $cls(',
+          '\n  );',
+        );
+        final fields =
+            RegExp(
+              r'^    (\w+):',
+              multiLine: true,
+            ).allMatches(instance).map((m) => m.group(1)!).toList();
+
+        expect(fields, isNotEmpty, reason: 'found no fields on $cls');
+        for (final field in fields) {
+          expect(
+            body,
+            contains(compare(field)),
+            reason: '$cls.$field is a field equality never looks at',
+          );
+          expect(
+            body,
+            contains('int get hashCode => Object.hashAll(['),
+            reason: '$cls does not hash by value',
+          );
+        }
+      }
+    });
+
+    test('hashes the colors extension past what Object.hash takes', () {
+      // Object.hash tops out at 20 arguments and this extension carries more
+      // tokens than that, so the generated code cannot use it.
+      final hash = _sliceBetween(
+        generatedCode,
+        'class TweakcnColors extends',
+        '\n}',
+      );
+
+      expect(hash, contains('int get hashCode => Object.hashAll(['));
+    });
+
     test('generates TweakcnRadius extension', () {
       expect(
         generatedCode,
@@ -229,6 +278,20 @@ const _lightColorScheme = ColorScheme(
           ).generate();
 
       expect(code, contains('factory MyRadius.fromRadius(double? radius)'));
+    });
+
+    test('compares the shadows extension by layer, not by list identity', () {
+      // Two lists holding equal BoxShadows are not `==`, so comparing the
+      // fields directly would leave every instance unequal to every other —
+      // which is the state this replaces.
+      final body = _sliceBetween(
+        generatedCode,
+        'class TweakcnShadows extends',
+        '\n}',
+      );
+
+      expect(body, isNot(contains('shadow2xs == other.shadow2xs')));
+      expect(body, contains('Object.hashAll(shadow2xs)'));
     });
 
     test('generates TweakcnShadows extension', () {

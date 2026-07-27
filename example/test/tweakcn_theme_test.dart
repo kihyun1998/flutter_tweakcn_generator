@@ -1,11 +1,11 @@
-// Proves the invariant the generated factory is supposed to hold, by running
-// it. The generator's own suite cannot: this package generates Flutter source
+// Proves the invariants the generated code is supposed to hold, by running it.
+// The generator's own suite cannot: this package generates Flutter source
 // without depending on Flutter, so `dart test` can only compare emitted text
-// against text. Here the generated class is a real class that can be built and
-// read back.
+// against text. Here the generated classes are real classes that can be built,
+// compared and put in a widget tree.
 //
-// This also happens to be the use the factory exists for — parse tweakcn CSS
-// at runtime and turn the tokens into a theme — so the test doubles as the
+// This also happens to be the use the factories exist for — parse tweakcn CSS
+// at runtime and turn the tokens into a theme — so the tests double as the
 // worked example.
 import 'dart:io';
 
@@ -14,118 +14,107 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_tweakcn_generator/flutter_tweakcn_generator.dart';
 
-/// Every color the extension carries, by field name.
-///
-/// Written out because Dart has no reflection here, and checked against
-/// [_declaredFields] so it cannot fall behind the generated class.
-Map<String, Color> _fields(TweakcnColors c) => {
-  'background': c.background,
-  'foreground': c.foreground,
-  'card': c.card,
-  'cardForeground': c.cardForeground,
-  'popover': c.popover,
-  'popoverForeground': c.popoverForeground,
-  'primary': c.primary,
-  'primaryForeground': c.primaryForeground,
-  'secondary': c.secondary,
-  'secondaryForeground': c.secondaryForeground,
-  'muted': c.muted,
-  'mutedForeground': c.mutedForeground,
-  'accent': c.accent,
-  'accentForeground': c.accentForeground,
-  'destructive': c.destructive,
-  'destructiveForeground': c.destructiveForeground,
-  'border': c.border,
-  'input': c.input,
-  'ring': c.ring,
-  'chart1': c.chart1,
-  'chart2': c.chart2,
-  'chart3': c.chart3,
-  'chart4': c.chart4,
-  'chart5': c.chart5,
-  'sidebar': c.sidebar,
-  'sidebarForeground': c.sidebarForeground,
-  'sidebarPrimary': c.sidebarPrimary,
-  'sidebarPrimaryForeground': c.sidebarPrimaryForeground,
-  'sidebarAccent': c.sidebarAccent,
-  'sidebarAccentForeground': c.sidebarAccentForeground,
-  'sidebarBorder': c.sidebarBorder,
-  'sidebarRing': c.sidebarRing,
-};
-
-/// Every step the radius extension carries, by field name. Policed the same
-/// way [_fields] is.
-Map<String, double> _radiusFields(TweakcnRadius r) => {
-  'sm': r.sm,
-  'md': r.md,
-  'lg': r.lg,
-  'xl': r.xl,
-};
-
-/// Every shadow level the extension carries, by field name. Policed the same
-/// way [_fields] is.
-Map<String, List<BoxShadow>> _shadowFields(TweakcnShadows s) => {
-  'shadow2xs': s.shadow2xs,
-  'shadowXs': s.shadowXs,
-  'shadowSm': s.shadowSm,
-  'shadow': s.shadow,
-  'shadowMd': s.shadowMd,
-  'shadowLg': s.shadowLg,
-  'shadowXl': s.shadowXl,
-  'shadow2xl': s.shadow2xl,
-};
-
-/// The names of the fields the generated class [type] declares.
-///
-/// Read back out of the generated source because Dart has no reflection here.
-/// A hand-written field list is the exact drift these factories exist to
-/// remove, so it may not be the one thing that silently falls behind.
-Set<String> _declaredFields(String type) {
-  final source = File('lib/theme/tweakcn_theme.g.dart').readAsStringSync();
-  final start = source.indexOf('class $type extends');
-  expect(start, isNonNegative, reason: 'no class $type in the generated file');
-  final body = source.substring(start);
-
-  // Matches any type rather than an enumerated few: a pattern that cannot
-  // read a field's type would drop that field, and a field missing from both
-  // sides is exactly what this is here to catch.
-  return RegExp(r'^  final .+ (\w+);', multiLine: true)
-      .allMatches(body.substring(0, body.indexOf('\n}')))
-      .map((m) => m.group(1)!)
-      .toSet();
-}
-
 void main() {
   final theme = CssParser.parse(File('tweakcn.css').readAsStringSync());
 
-  test('every field of every extension under test is compared', () {
-    // Without this, adding a token to the generator would leave the
-    // comparisons below quietly covering a subset.
-    for (final entry in {
-      'TweakcnColors': _fields(TweakcnColors.light).keys.toSet(),
-      'TweakcnRadius': _radiusFields(TweakcnRadius.standard).keys.toSet(),
-      'TweakcnShadows': _shadowFields(TweakcnShadows.light).keys.toSet(),
-    }.entries) {
-      final declared = _declaredFields(entry.key);
+  group('value equality', () {
+    test('two extensions built from the same tokens are equal', () {
+      expect(
+        TweakcnColors.fromMap(theme.light.colors),
+        TweakcnColors.fromMap(theme.light.colors),
+      );
+      expect(TweakcnRadius.fromRadius(10), TweakcnRadius.fromRadius(10));
+      expect(
+        TweakcnShadows.fromShadowMap(theme.light.shadowLayers),
+        TweakcnShadows.fromShadowMap(theme.light.shadowLayers),
+      );
+    });
 
-      expect(declared, isNotEmpty, reason: 'found no fields on ${entry.key}');
-      expect(entry.value, declared, reason: '${entry.key} is compared partly');
-    }
+    test('equal extensions hash the same', () {
+      expect(
+        TweakcnColors.fromMap(theme.light.colors).hashCode,
+        TweakcnColors.fromMap(theme.light.colors).hashCode,
+      );
+      expect(
+        TweakcnRadius.fromRadius(10).hashCode,
+        TweakcnRadius.fromRadius(10).hashCode,
+      );
+      expect(
+        TweakcnShadows.fromShadowMap(theme.light.shadowLayers).hashCode,
+        TweakcnShadows.fromShadowMap(theme.light.shadowLayers).hashCode,
+      );
+    });
+
+    test('copyWith changes what it is given and nothing else', () {
+      // Equality is what makes this expressible; before it, "nothing else
+      // changed" could only be checked field by field.
+      expect(
+        TweakcnColors.light.copyWith(primary: const Color(0xFF00FF00)),
+        isNot(TweakcnColors.light),
+      );
+      expect(TweakcnColors.light.copyWith(), TweakcnColors.light);
+      expect(TweakcnRadius.standard.copyWith(), TweakcnRadius.standard);
+      expect(TweakcnShadows.light.copyWith(), TweakcnShadows.light);
+    });
+
+    test('lerp returns each end at its own end of the range', () {
+      expect(
+        TweakcnColors.light.lerp(TweakcnColors.dark, 0),
+        TweakcnColors.light,
+      );
+      expect(
+        TweakcnColors.light.lerp(TweakcnColors.dark, 1),
+        TweakcnColors.dark,
+      );
+      expect(
+        TweakcnRadius.standard.lerp(TweakcnRadius.standard, 0.5),
+        TweakcnRadius.standard,
+      );
+      expect(
+        TweakcnShadows.light.lerp(TweakcnShadows.dark, 1),
+        TweakcnShadows.dark,
+      );
+    });
+
+    test('one differing field is enough to be unequal', () {
+      final tokens = Map.of(theme.light.colors)..['sidebar-ring'] = 0xFF00FF00;
+
+      expect(
+        TweakcnColors.fromMap(tokens),
+        isNot(TweakcnColors.fromMap(theme.light.colors)),
+      );
+      expect(TweakcnRadius.fromRadius(10), isNot(TweakcnRadius.fromRadius(11)));
+    });
+
+    test('a shadow level differing only in a later layer is unequal', () {
+      // The levels are lists, and a list is equal only to itself, so this is
+      // the case that would pass if they were compared directly.
+      final layers = Map.of(theme.light.shadowLayers);
+      final sm = List.of(layers['shadow-sm']!);
+      sm[sm.length - 1] = (
+        offsetX: sm.last.offsetX,
+        offsetY: sm.last.offsetY,
+        blurRadius: sm.last.blurRadius + 1,
+        spreadRadius: sm.last.spreadRadius,
+        color: sm.last.color,
+      );
+      layers['shadow-sm'] = sm;
+
+      expect(sm.length, greaterThan(1));
+      expect(
+        TweakcnShadows.fromShadowMap(layers),
+        isNot(TweakcnShadows.fromShadowMap(theme.light.shadowLayers)),
+      );
+    });
   });
 
   group('TweakcnColors.fromMap', () {
     test('rebuilds the light constant from this theme\'s own tokens', () {
-      expect(
-        _fields(TweakcnColors.fromMap(theme.light.colors)),
-        _fields(TweakcnColors.light),
-      );
+      expect(TweakcnColors.fromMap(theme.light.colors), TweakcnColors.light);
     });
 
     test('rebuilds the dark constant from this theme\'s own tokens', () {
-      expect(
-        _fields(TweakcnColors.fromMap(theme.dark.colors)),
-        _fields(TweakcnColors.dark),
-      );
+      expect(TweakcnColors.fromMap(theme.dark.colors), TweakcnColors.dark);
     });
 
     test('gives a token the CSS never defined the same placeholder', () {
@@ -136,77 +125,55 @@ void main() {
         const Color(0x00000000),
       );
     });
-
-    test('builds a usable ThemeData without going through the constants', () {
-      // The point of the factory: CSS pasted at runtime, rendered live.
-      final colors = TweakcnColors.fromMap(theme.light.colors);
-
-      final data = ThemeData(extensions: [colors]);
-
-      expect(data.extension<TweakcnColors>()?.primary, colors.primary);
-    });
   });
 
   group('TweakcnRadius.fromRadius', () {
     test('rebuilds the constant from this theme\'s own radius', () {
       // A ThemeData carries one radius, so the generator prefers light and
       // falls back to dark — the caller has to hand over the same choice.
-      final built = TweakcnRadius.fromRadius(
-        theme.light.radius ?? theme.dark.radius,
+      expect(
+        TweakcnRadius.fromRadius(theme.light.radius ?? theme.dark.radius),
+        TweakcnRadius.standard,
       );
-
-      expect(_radiusFields(built), _radiusFields(TweakcnRadius.standard));
     });
 
     test('derives the shadcn steps around the radius', () {
-      final built = TweakcnRadius.fromRadius(10);
-
-      expect(_radiusFields(built), {
-        'sm': 6.0,
-        'md': 8.0,
-        'lg': 10.0,
-        'xl': 14.0,
-      });
+      expect(
+        TweakcnRadius.fromRadius(10),
+        const TweakcnRadius(sm: 6, md: 8, lg: 10, xl: 14),
+      );
     });
 
     test('never derives a negative step', () {
       // A BorderRadius cannot be negative, and a 1px theme would ask for one.
-      final built = TweakcnRadius.fromRadius(1);
-
-      expect(_radiusFields(built), {
-        'sm': 0.0,
-        'md': 0.0,
-        'lg': 1.0,
-        'xl': 5.0,
-      });
+      expect(
+        TweakcnRadius.fromRadius(1),
+        const TweakcnRadius(sm: 0, md: 0, lg: 1, xl: 5),
+      );
     });
 
     test('falls back to 8 when the theme declares no radius', () {
       // Not this theme's radius — this theme declares one. It is what a theme
       // that declares none generates, which is what null has to mean here.
-      final built = TweakcnRadius.fromRadius(null);
-
-      expect(_radiusFields(built), {
-        'sm': 4.0,
-        'md': 6.0,
-        'lg': 8.0,
-        'xl': 12.0,
-      });
+      expect(
+        TweakcnRadius.fromRadius(null),
+        const TweakcnRadius(sm: 4, md: 6, lg: 8, xl: 12),
+      );
     });
   });
 
   group('TweakcnShadows.fromShadowMap', () {
     test('rebuilds the light constant from this theme\'s own shadows', () {
       expect(
-        _shadowFields(TweakcnShadows.fromShadowMap(theme.light.shadowLayers)),
-        _shadowFields(TweakcnShadows.light),
+        TweakcnShadows.fromShadowMap(theme.light.shadowLayers),
+        TweakcnShadows.light,
       );
     });
 
     test('rebuilds the dark constant from this theme\'s own shadows', () {
       expect(
-        _shadowFields(TweakcnShadows.fromShadowMap(theme.dark.shadowLayers)),
-        _shadowFields(TweakcnShadows.dark),
+        TweakcnShadows.fromShadowMap(theme.dark.shadowLayers),
+        TweakcnShadows.dark,
       );
     });
 
@@ -247,6 +214,74 @@ void main() {
       expect(built.shadowMd.single.blurRadius, 3);
       expect(built.shadowMd.single.spreadRadius, -1);
       expect(built.shadowMd.single.color, const Color(0x33000000));
+    });
+  });
+
+  group('as a ThemeData', () {
+    ThemeData buildFromTokens({Map<String, int>? colors}) => ThemeData(
+      extensions: [
+        TweakcnColors.fromMap(colors ?? theme.light.colors),
+        TweakcnRadius.fromRadius(theme.light.radius ?? theme.dark.radius),
+        TweakcnShadows.fromShadowMap(theme.light.shadowLayers),
+      ],
+    );
+
+    test('a theme rebuilt from unchanged tokens equals the previous one', () {
+      // ThemeData compares its extensions by value, so this is what decides
+      // whether an unchanged rebuild reaches the widget tree.
+      expect(buildFromTokens(), buildFromTokens());
+    });
+
+    // A bare `Theme` rather than a `MaterialApp`: the app inserts an
+    // `AnimatedTheme` and a `Navigator`, both of which decide on their own
+    // when to rebuild. What is under test is only whether `Theme` tells its
+    // dependents anything, so the child instance is reused too — then a
+    // rebuild can only have come from the inherited dependency.
+    testWidgets('an unchanged rebuild does not notify Theme.of dependents', (
+      tester,
+    ) async {
+      var builds = 0;
+      final child = Builder(
+        builder: (context) {
+          Theme.of(context);
+          builds++;
+          return const SizedBox();
+        },
+      );
+
+      await tester.pumpWidget(Theme(data: buildFromTokens(), child: child));
+      final afterFirstFrame = builds;
+      await tester.pumpWidget(Theme(data: buildFromTokens(), child: child));
+
+      expect(afterFirstFrame, 1);
+      expect(builds, afterFirstFrame);
+    });
+
+    testWidgets('a changed token does reach the tree', (tester) async {
+      // The inverse of the test above, and identical to it but for one token:
+      // same widgets, same three extensions, so what differs is the token
+      // rather than the shape of the theme.
+      Color? seen;
+      final child = Builder(
+        builder: (context) {
+          seen = context.tweakcnColors.primary;
+          return const SizedBox();
+        },
+      );
+
+      await tester.pumpWidget(Theme(data: buildFromTokens(), child: child));
+      final before = seen;
+
+      final changed = Map.of(theme.light.colors)..['primary'] = 0xFF00FF00;
+      await tester.pumpWidget(
+        Theme(
+          data: buildFromTokens(colors: changed),
+          child: child,
+        ),
+      );
+
+      expect(before, isNot(const Color(0xFF00FF00)));
+      expect(seen, const Color(0xFF00FF00));
     });
   });
 }
