@@ -114,6 +114,53 @@ class TweakcnColors extends ThemeExtension<TweakcnColors> {
     required this.sidebarRing,
   });
 
+  /// Builds TweakcnColors from parsed tweakcn color tokens.
+  ///
+  /// Keys are CSS variable names without `--`, values 32-bit ARGB.
+  /// A token [colors] does not carry becomes `Color(0x00000000)`,
+  /// the same placeholder [light] and [dark] use, so building from a
+  /// theme's own tokens reproduces that theme's constant.
+  factory TweakcnColors.fromMap(Map<String, int> colors) => TweakcnColors(
+    background: Color(colors['background'] ?? 0x00000000),
+    foreground: Color(colors['foreground'] ?? 0x00000000),
+    card: Color(colors['card'] ?? 0x00000000),
+    cardForeground: Color(colors['card-foreground'] ?? 0x00000000),
+    popover: Color(colors['popover'] ?? 0x00000000),
+    popoverForeground: Color(colors['popover-foreground'] ?? 0x00000000),
+    primary: Color(colors['primary'] ?? 0x00000000),
+    primaryForeground: Color(colors['primary-foreground'] ?? 0x00000000),
+    secondary: Color(colors['secondary'] ?? 0x00000000),
+    secondaryForeground: Color(colors['secondary-foreground'] ?? 0x00000000),
+    muted: Color(colors['muted'] ?? 0x00000000),
+    mutedForeground: Color(colors['muted-foreground'] ?? 0x00000000),
+    accent: Color(colors['accent'] ?? 0x00000000),
+    accentForeground: Color(colors['accent-foreground'] ?? 0x00000000),
+    destructive: Color(colors['destructive'] ?? 0x00000000),
+    destructiveForeground: Color(
+      colors['destructive-foreground'] ?? 0x00000000,
+    ),
+    border: Color(colors['border'] ?? 0x00000000),
+    input: Color(colors['input'] ?? 0x00000000),
+    ring: Color(colors['ring'] ?? 0x00000000),
+    chart1: Color(colors['chart-1'] ?? 0x00000000),
+    chart2: Color(colors['chart-2'] ?? 0x00000000),
+    chart3: Color(colors['chart-3'] ?? 0x00000000),
+    chart4: Color(colors['chart-4'] ?? 0x00000000),
+    chart5: Color(colors['chart-5'] ?? 0x00000000),
+    sidebar: Color(colors['sidebar'] ?? 0x00000000),
+    sidebarForeground: Color(colors['sidebar-foreground'] ?? 0x00000000),
+    sidebarPrimary: Color(colors['sidebar-primary'] ?? 0x00000000),
+    sidebarPrimaryForeground: Color(
+      colors['sidebar-primary-foreground'] ?? 0x00000000,
+    ),
+    sidebarAccent: Color(colors['sidebar-accent'] ?? 0x00000000),
+    sidebarAccentForeground: Color(
+      colors['sidebar-accent-foreground'] ?? 0x00000000,
+    ),
+    sidebarBorder: Color(colors['sidebar-border'] ?? 0x00000000),
+    sidebarRing: Color(colors['sidebar-ring'] ?? 0x00000000),
+  );
+
   static const light = TweakcnColors(
     background: Color(0xFFF9F9F9),
     foreground: Color(0xFF3A3A3A),

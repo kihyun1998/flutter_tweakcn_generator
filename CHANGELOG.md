@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Generated colors extensions now expose a `fromMap` factory, so a tool that parses tweakcn CSS at runtime can turn the parsed tokens into the extension instead of re-writing that mapping by hand — a copy that drifts silently, showing no error when the generator adds a token, only a color that stops updating. Building from a theme's own tokens reproduces that theme's generated constant, and a token the CSS does not define gets the same transparent placeholder the constants use. The signature stays in primitives (`Map<String, int>`), so the generated file still imports Flutter and nothing else
+
 - Fix `--font-sans` being read from the light theme only, so a CSS file that names its font solely in the `.dark` block got no font at all — no text theme, nothing downloaded, and an empty family list feeding `font_exclusive` cleanup. Detection now prefers light and falls back to dark
 - Warn when light and dark name different font stacks, since a `ThemeData` carries one font family and only the light stack is used
 

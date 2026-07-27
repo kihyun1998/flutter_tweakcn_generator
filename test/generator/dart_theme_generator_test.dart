@@ -73,6 +73,78 @@ const _lightColorScheme = ColorScheme(
       expect(generatedCode, contains('TweakcnColors lerp('));
     });
 
+    test('generates a runtime factory over the parsed color map', () {
+      // The signature stays in primitives on purpose: the generated file
+      // imports Flutter and nothing else, so a consumer building a theme at
+      // runtime does not have to depend on this package to do it.
+      expect(
+        generatedCode,
+        contains('factory TweakcnColors.fromMap(Map<String, int> colors)'),
+      );
+    });
+
+    test('the factory reads every token the constants declare', () {
+      final factory = _sliceBetween(
+        generatedCode,
+        'factory TweakcnColors.fromMap',
+        '  );',
+      );
+      final light = _sliceBetween(
+        generatedCode,
+        'static const light = TweakcnColors(',
+        '  );',
+      );
+
+      final declared =
+          RegExp(
+            r'^    (\w+): ',
+            multiLine: true,
+          ).allMatches(light).map((m) => m.group(1)).toList();
+
+      expect(declared, isNotEmpty);
+      for (final field in declared) {
+        expect(
+          factory,
+          contains('$field: Color(colors['),
+          reason: '$field is a constant field the factory never fills',
+        );
+      }
+    });
+
+    test('the factory falls back to the placeholder the constants use', () {
+      // A theme that omits a token generates `Color(0x00000000)` for it. The
+      // factory has to agree, or building from a theme's own tokens would not
+      // reproduce that theme's constant.
+      final code =
+          DartThemeGenerator(
+            CssParser.parse(':root { --background: #ffffff; }'),
+          ).generate();
+      final factory = _sliceBetween(
+        code,
+        'factory TweakcnColors.fromMap',
+        '  );',
+      );
+
+      expect(code, contains('foreground: Color(0x00000000),'));
+      expect(
+        factory,
+        contains("foreground: Color(colors['foreground'] ?? 0x00000000)"),
+      );
+    });
+
+    test('the factory follows the class prefix', () {
+      final code =
+          DartThemeGenerator(
+            CssParser.parse(':root { --background: #ffffff; }'),
+            classPrefix: 'My',
+          ).generate();
+
+      expect(
+        code,
+        contains('factory MyColors.fromMap(Map<String, int> colors)'),
+      );
+    });
+
     test('generates TweakcnRadius extension', () {
       expect(
         generatedCode,
@@ -665,4 +737,16 @@ const _lightColorScheme = ColorScheme(
       expect(generator.substitutedColorSchemeTokens, isEmpty);
     });
   });
+}
+
+/// The slice of [code] from [start] up to the next [end] after it.
+///
+/// Lets a test assert about one member of a generated class without matching
+/// text that a neighbouring member happens to share.
+String _sliceBetween(String code, String start, String end) {
+  final from = code.indexOf(start);
+  expect(from, isNonNegative, reason: 'generated code has no "$start"');
+  final to = code.indexOf(end, from);
+  expect(to, isNonNegative, reason: 'no "$end" after "$start"');
+  return code.substring(from, to);
 }

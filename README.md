@@ -142,11 +142,43 @@ targets:
 | Output | Description |
 |---|---|
 | `ColorScheme` (light/dark) | CSS colors mapped to Material ColorScheme |
-| `TweakcnColors` | All color tokens (ThemeExtension) |
+| `TweakcnColors` | All color tokens (ThemeExtension), plus a `fromMap` factory |
 | `TweakcnRadius` | sm, md, lg, xl (ThemeExtension) |
 | `TweakcnShadows` | shadow-2xs through shadow-2xl (ThemeExtension) |
 | `TweakcnTheme` | `ThemeData.light` / `ThemeData.dark` |
 | `TweakcnBuildContext` | Convenience extensions like `context.tweakcnColors` |
+
+### Building a theme at runtime
+
+`TweakcnTheme.light` and `TweakcnTheme.dark` are baked in at generation time.
+To render a theme the user supplies — pasting tweakcn CSS and previewing it
+live, say — parse the CSS and hand the tokens to the generated factory:
+
+```dart
+import 'package:flutter_tweakcn_generator/flutter_tweakcn_generator.dart';
+
+import 'theme/tweakcn_theme.g.dart';
+
+final theme = CssParser.parse(css);
+final colors = TweakcnColors.fromMap(theme.light.colors);
+
+MaterialApp(
+  theme: ThemeData(extensions: [colors]),
+);
+```
+
+`fromMap` takes the parsed token map — CSS variable names without `--`, mapped
+to 32-bit ARGB — and covers exactly the tokens the generator writes, so it
+keeps covering them when tokens are added. A token the CSS does not define gets
+the same transparent placeholder the generated constants use, which means
+building from a theme's own tokens reproduces that theme's constants.
+
+Its parameter and return types name nothing from this package, so the generated
+file keeps importing Flutter and nothing else, and passing it around costs you
+no dependency. Only `CssParser` does — parsing at runtime means moving
+`flutter_tweakcn_generator` from `dev_dependencies` to `dependencies`. If your
+CSS is fixed at build time you do not need any of this: use `TweakcnTheme.light`
+and `TweakcnTheme.dark`.
 
 ### ColorScheme Mapping
 

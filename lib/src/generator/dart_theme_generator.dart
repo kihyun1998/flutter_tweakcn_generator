@@ -165,31 +165,9 @@ class DartThemeGenerator {
     buf.writeln('  });');
     buf.writeln();
 
-    // Light instance
-    buf.writeln('  static const light = $cls(');
-    for (final token in _extensionColorTokens) {
-      final color = data.light.colors[token];
-      if (color != null) {
-        buf.writeln('    ${_toCamelCase(token)}: ${_colorLiteral(color)},');
-      } else {
-        buf.writeln('    ${_toCamelCase(token)}: Color(0x00000000),');
-      }
-    }
-    buf.writeln('  );');
-    buf.writeln();
-
-    // Dark instance
-    buf.writeln('  static const dark = $cls(');
-    for (final token in _extensionColorTokens) {
-      final color = data.dark.colors[token];
-      if (color != null) {
-        buf.writeln('    ${_toCamelCase(token)}: ${_colorLiteral(color)},');
-      } else {
-        buf.writeln('    ${_toCamelCase(token)}: Color(0x00000000),');
-      }
-    }
-    buf.writeln('  );');
-    buf.writeln();
+    _writeColorsFromMap(buf, cls);
+    _writeColorsInstance(buf, cls, 'light', data.light.colors);
+    _writeColorsInstance(buf, cls, 'dark', data.dark.colors);
 
     // copyWith
     buf.writeln('  @override');
@@ -220,6 +198,60 @@ class DartThemeGenerator {
     buf.writeln('  }');
 
     buf.writeln('}');
+    buf.writeln();
+  }
+
+  /// Writes one of the two baked-in instances.
+  void _writeColorsInstance(
+    StringBuffer buf,
+    String cls,
+    String name,
+    Map<String, int> colors,
+  ) {
+    buf.writeln('  static const $name = $cls(');
+    for (final token in _extensionColorTokens) {
+      final color = colors[token] ?? _missingColorArgb;
+      buf.writeln('    ${_toCamelCase(token)}: ${_colorLiteral(color)},');
+    }
+    buf.writeln('  );');
+    buf.writeln();
+  }
+
+  /// Writes the factory that builds the extension from parsed color tokens.
+  ///
+  /// A tool that parses tweakcn CSS at runtime — pasting a theme and rendering
+  /// it live — reaches the same token map the generator reads, but has no way
+  /// to turn it into an instance. Doing that by hand outside this package
+  /// drifts silently: the generator adds a token, the copy does not, and the
+  /// new color simply never updates.
+  ///
+  /// Written over [_extensionColorTokens] like every other member, so a token
+  /// added there is a token the factory fills.
+  void _writeColorsFromMap(StringBuffer buf, String cls) {
+    // `Map<String, int>` rather than this package's parsed type: the generated
+    // file imports Flutter and nothing else, and a consumer who takes this
+    // package as a dev dependency should not have to keep it at runtime.
+    buf.writeln('  /// Builds $cls from parsed tweakcn color tokens.');
+    buf.writeln('  ///');
+    buf.writeln(
+      '  /// Keys are CSS variable names without `--`, values 32-bit ARGB.',
+    );
+    buf.writeln(
+      '  /// A token [colors] does not carry becomes '
+      '`${_colorLiteral(_missingColorArgb)}`,',
+    );
+    buf.writeln(
+      '  /// the same placeholder [light] and [dark] use, so building from a',
+    );
+    buf.writeln("  /// theme's own tokens reproduces that theme's constant.");
+    buf.writeln('  factory $cls.fromMap(Map<String, int> colors) => $cls(');
+    for (final token in _extensionColorTokens) {
+      buf.writeln(
+        "    ${_toCamelCase(token)}: Color(colors['$token'] ?? "
+        '${_argbLiteral(_missingColorArgb)}),',
+      );
+    }
+    buf.writeln('  );');
     buf.writeln();
   }
 
@@ -539,9 +571,19 @@ class DartThemeGenerator {
   static String _lowerFirst(String s) =>
       s.isEmpty ? s : s[0].toLowerCase() + s.substring(1);
 
-  static String _colorLiteral(int argb) {
-    return 'Color(0x${argb.toRadixString(16).padLeft(8, '0').toUpperCase()})';
-  }
+  /// The color a token the theme does not define is written as.
+  ///
+  /// Fully transparent, so a widget reading it shows nothing rather than an
+  /// arbitrary colour that looks deliberate. Named once because the constants
+  /// and the runtime factory both have to use it: building from a theme's own
+  /// tokens has to reproduce that theme's constants exactly, and they would
+  /// disagree the moment one of the two changed.
+  static const _missingColorArgb = 0x00000000;
+
+  static String _colorLiteral(int argb) => 'Color(${_argbLiteral(argb)})';
+
+  static String _argbLiteral(int argb) =>
+      '0x${argb.toRadixString(16).padLeft(8, '0').toUpperCase()}';
 
   /// Generic CSS font keywords that are not Google Fonts.
   static const _genericFontKeywords = {

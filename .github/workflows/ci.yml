@@ -34,7 +34,7 @@ jobs:
       - run: dart test
 
   generated-output:
-    name: Compile generated output
+    name: Compile and run generated output
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,9 +45,18 @@ jobs:
         with:
           channel: stable
       - run: dart pub get
-      # `dart pub get`, not `flutter pub get`: the latter also regenerates the
-      # example's checked-in platform plugin registrants, which is churn this
-      # job has no business producing.
+      # The compile check needs the example resolved and does not resolve it
+      # itself. `dart pub get` rather than `flutter pub get` because the latter
+      # rewrites the example's checked-in platform plugin registrants — churn
+      # that matters on a developer's machine. `flutter test` below does it
+      # anyway, which is harmless on a throwaway checkout but is why running
+      # the example's tests locally leaves those files modified.
       - run: dart pub get
         working-directory: example
       - run: dart run tool/verify_generated_output.dart
+      # Compiling is not the whole claim. The generated runtime factory is
+      # supposed to rebuild a theme's own constants from that theme's own
+      # tokens, and only running it says whether it does. The example is where
+      # generated code can be run at all.
+      - run: flutter test
+        working-directory: example
