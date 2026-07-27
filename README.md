@@ -332,6 +332,10 @@ build: a `ColorScheme` missing a parameter a new Flutter release made
 `required`, an unbalanced `textTheme: ...apply(...)`, or a `GoogleFonts` method
 name derived from a family that the package does not spell that way.
 
+CI runs both commands on every push and pull request, and once a week on its
+own — a generated file can stop compiling because Flutter changed, without
+anyone touching this repo.
+
 ## License
 
 MIT

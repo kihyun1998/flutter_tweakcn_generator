@@ -1,0 +1,51 @@
+# The two checks this repo needs, in the two worlds it lives in.
+#
+# `test` runs on a plain Dart SDK because that is what consumers have: this is
+# a dev dependency, so nothing about it may need Flutter to be installed.
+#
+# `generated-output` runs on a Flutter SDK because the code the generator
+# writes does need Flutter, and nothing in `dart test` can tell whether that
+# code compiles.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # A generated file can stop compiling without anyone touching this repo —
+    # a Flutter release adding a `required` parameter to `ColorScheme` is the
+    # case that prompted the check. Waiting for the next pull request means
+    # hearing about it after a user does, so ask once a week regardless.
+    - cron: '0 3 * * 1'
+
+jobs:
+  test:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+      - run: dart analyze --fatal-infos
+      - run: dart format --output=none --set-exit-if-changed .
+      - run: dart test
+
+  generated-output:
+    name: Compile generated output
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Deliberately not pinned to a Flutter version. Pinning would make this
+      # job blind to exactly the thing it exists to catch — the SDK changing
+      # under generated code that no longer compiles against it.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: dart pub get
+      # `dart pub get`, not `flutter pub get`: the latter also regenerates the
+      # example's checked-in platform plugin registrants, which is churn this
+      # job has no business producing.
+      - run: dart pub get
+        working-directory: example
+      - run: dart run tool/verify_generated_output.dart
