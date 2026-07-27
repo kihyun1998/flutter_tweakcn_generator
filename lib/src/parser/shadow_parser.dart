@@ -1,6 +1,33 @@
 import 'color_parser.dart';
 import 'css_length.dart';
 
+/// One shadow layer in primitives, as it crosses into generated code.
+///
+/// A record rather than [ShadowData] because the generated file imports
+/// Flutter and nothing else: naming a class from this package in the factory's
+/// signature would drag the whole generator into a consumer's runtime
+/// dependencies. A record is structural, so both sides can name this type
+/// without either depending on the other.
+///
+/// A map of strings would have been primitive too, and would have made a typo
+/// in a field name a silently missing value — the drift these factories exist
+/// to remove. The compiler checks these.
+///
+/// Offsets, blur and spread are logical pixels; `color` is 32-bit ARGB.
+///
+/// The generated file declares the same record under its own name. Because a
+/// record type is structural the two are one type, but nothing links the two
+/// declarations: a field added here and not there is caught only by the
+/// example's tests, which are the one place both are compiled together.
+typedef ShadowLayer =
+    ({
+      double offsetX,
+      double offsetY,
+      double blurRadius,
+      double spreadRadius,
+      int color,
+    });
+
 /// A single parsed CSS `box-shadow` layer.
 ///
 /// Maps to Flutter's `BoxShadow` in the generated code.
@@ -27,6 +54,15 @@ class ShadowData {
     required this.spreadRadius,
     required this.color,
   });
+
+  /// This layer as a [ShadowLayer], the shape generated code takes.
+  ShadowLayer toLayer() => (
+    offsetX: offsetX,
+    offsetY: offsetY,
+    blurRadius: blurRadius,
+    spreadRadius: spreadRadius,
+    color: color,
+  );
 
   @override
   String toString() =>

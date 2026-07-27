@@ -68,4 +68,15 @@ class ThemeModeData {
     this.shadows = const {},
     this.fontSans,
   });
+
+  /// [shadows] in the primitive shape generated code takes, keyed the same
+  /// way and with each level's layers left in order.
+  ///
+  /// Exists so that turning a parsed theme into a runtime theme does not mean
+  /// reimplementing the parser's own output: a consumer hands this straight to
+  /// the generated shadows factory.
+  Map<String, List<ShadowLayer>> get shadowLayers => {
+    for (final level in shadows.entries)
+      level.key: [for (final layer in level.value) layer.toLayer()],
+  };
 }

@@ -388,11 +388,14 @@ class DartThemeGenerator {
 
   void _writeShadowsExtension(StringBuffer buf) {
     final cls = '${classPrefix}Shadows';
+    final layer = '${classPrefix}ShadowLayer';
 
     buf.writeln('// ──────────────────────────────────────────');
     buf.writeln('// $cls (ThemeExtension)');
     buf.writeln('// ──────────────────────────────────────────');
     buf.writeln();
+
+    _writeShadowLayerTypedef(buf, layer);
 
     buf.writeln('class $cls extends ThemeExtension<$cls> {');
 
@@ -409,6 +412,8 @@ class DartThemeGenerator {
     }
     buf.writeln('  });');
     buf.writeln();
+
+    _writeShadowsFromMap(buf, cls, layer);
 
     // Light instance
     _writeShadowInstance(buf, cls, 'light', data.light.shadows);
@@ -447,6 +452,74 @@ class DartThemeGenerator {
     buf.writeln('  }');
 
     buf.writeln('}');
+    buf.writeln();
+  }
+
+  /// Writes the shape one shadow layer crosses into generated code in.
+  ///
+  /// A record, not a class from this package: the generated file imports
+  /// Flutter and nothing else, and taking the parser's own shadow type here
+  /// would put this package in a consumer's runtime dependencies. A record is
+  /// structural, so [ThemeModeData.shadowLayers] produces exactly this type
+  /// without either side importing the other.
+  ///
+  /// Named fields rather than a map of strings, so that misspelling one is a
+  /// compile error instead of a layer that quietly loses its blur.
+  void _writeShadowLayerTypedef(StringBuffer buf, String layer) {
+    buf.writeln('/// One layer of one shadow level, in primitives.');
+    buf.writeln('///');
+    buf.writeln('/// Offsets, blur and spread are logical pixels; `color` is');
+    buf.writeln('/// 32-bit ARGB. A record, so writing one by hand has its');
+    buf.writeln('/// field names checked.');
+    buf.writeln('typedef $layer = ({');
+    buf.writeln('  double offsetX,');
+    buf.writeln('  double offsetY,');
+    buf.writeln('  double blurRadius,');
+    buf.writeln('  double spreadRadius,');
+    buf.writeln('  int color,');
+    buf.writeln('});');
+    buf.writeln();
+  }
+
+  /// Writes `fromShadowMap`, the factory that builds the extension from
+  /// parsed shadow levels.
+  ///
+  /// Like the colors and radius factories, this exists because the mapping it
+  /// performs lived only in this generator: a consumer building a theme from
+  /// CSS parsed at runtime had to rebuild `BoxShadow` lists by hand, against a
+  /// token list that would grow without them.
+  ///
+  /// Written over [_shadowTokens] like every other member, so a level added
+  /// there is a level the factory fills.
+  void _writeShadowsFromMap(StringBuffer buf, String cls, String layer) {
+    buf.writeln('  /// Builds $cls from parsed tweakcn shadow levels.');
+    buf.writeln('  ///');
+    buf.writeln('  /// Keys are CSS variable names without `--`, and each');
+    buf.writeln('  /// level keeps its layers in the order the CSS lists');
+    buf.writeln('  /// them. A level [shadows] does not carry comes out');
+    buf.writeln('  /// empty, as it does in [light] and [dark], so building');
+    buf.writeln("  /// from a theme's own shadows reproduces its constant.");
+    buf.writeln('  factory $cls.fromShadowMap(');
+    buf.writeln('    Map<String, List<$layer>> shadows,');
+    buf.writeln('  ) {');
+    buf.writeln('    List<BoxShadow> level(String token) => [');
+    buf.writeln(
+      '      for (final layer in shadows[token] ?? const <$layer>[])',
+    );
+    buf.writeln('        BoxShadow(');
+    buf.writeln('          offset: Offset(layer.offsetX, layer.offsetY),');
+    buf.writeln('          blurRadius: layer.blurRadius,');
+    buf.writeln('          spreadRadius: layer.spreadRadius,');
+    buf.writeln('          color: Color(layer.color),');
+    buf.writeln('        ),');
+    buf.writeln('    ];');
+    buf.writeln();
+    buf.writeln('    return $cls(');
+    for (final token in _shadowTokens) {
+      buf.writeln("      ${_shadowCamelCase(token)}: level('$token'),");
+    }
+    buf.writeln('    );');
+    buf.writeln('  }');
     buf.writeln();
   }
 

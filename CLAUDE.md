@@ -8,9 +8,14 @@ A Dart build_runner package that generates Flutter theme code from tweakcn theme
 
 ```bash
 dart run tool/verify_generated_output.dart
+cd example && flutter test
 ```
 
-It compiles the generated output for four theme shapes against the real SDK inside `example/`, which must have its packages resolved (`flutter pub get`). See the Development section of `README.md`.
+The first compiles the generated output for six theme shapes against the real SDK inside `example/`, which must have its packages resolved (`flutter pub get`).
+
+The second runs the generated code. It is also the only thing that type-checks the seam between the package and its output: `ThemeModeData.shadowLayers` produces the record type the generated `fromShadowMap` takes, and nothing else in the repo puts those two declarations in the same compilation. Adding a field to one and not the other fails only here.
+
+See the Development section of `README.md`.
 
 ## Agent skills
 

@@ -166,6 +166,7 @@ MaterialApp(
     extensions: [
       TweakcnColors.fromMap(theme.light.colors),
       TweakcnRadius.fromRadius(theme.light.radius ?? theme.dark.radius),
+      TweakcnShadows.fromShadowMap(theme.light.shadowLayers),
     ],
   ),
 );
@@ -184,9 +185,28 @@ and it falls back to the same base the constant was built from. A `ThemeData`
 carries one radius, so hand it light's and fall back to dark's, exactly as the
 generator does.
 
-Its parameter and return types name nothing from this package, so the generated
-file keeps importing Flutter and nothing else, and passing it around costs you
-no dependency. Only `CssParser` does — parsing at runtime means moving
+`fromShadowMap` takes the levels keyed by CSS variable name, each holding its
+layers in paint order. A level the CSS does not define comes out empty, as it
+does in the constants. Shadow layers are the one token that is not a plain
+number, so the generated file declares a record type for them:
+
+```dart
+typedef TweakcnShadowLayer = ({
+  double offsetX,
+  double offsetY,
+  double blurRadius,
+  double spreadRadius,
+  int color,
+});
+```
+
+`ThemeModeData.shadowLayers` produces exactly that shape, so you never write it
+out yourself — but because a record is structural, you can, without importing
+anything.
+
+None of these factories name a type from this package, so the generated file
+keeps importing Flutter and nothing else, and passing their results around
+costs you no dependency. Only `CssParser` does — parsing at runtime means moving
 `flutter_tweakcn_generator` from `dev_dependencies` to `dependencies`. If your
 CSS is fixed at build time you do not need any of this: use `TweakcnTheme.light`
 and `TweakcnTheme.dark`.

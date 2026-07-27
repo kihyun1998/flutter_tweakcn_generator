@@ -413,6 +413,19 @@ class TweakcnRadius extends ThemeExtension<TweakcnRadius> {
 // TweakcnShadows (ThemeExtension)
 // ──────────────────────────────────────────
 
+/// One layer of one shadow level, in primitives.
+///
+/// Offsets, blur and spread are logical pixels; `color` is
+/// 32-bit ARGB. A record, so writing one by hand has its
+/// field names checked.
+typedef TweakcnShadowLayer = ({
+  double offsetX,
+  double offsetY,
+  double blurRadius,
+  double spreadRadius,
+  int color,
+});
+
 class TweakcnShadows extends ThemeExtension<TweakcnShadows> {
   final List<BoxShadow> shadow2xs;
   final List<BoxShadow> shadowXs;
@@ -433,6 +446,38 @@ class TweakcnShadows extends ThemeExtension<TweakcnShadows> {
     required this.shadowXl,
     required this.shadow2xl,
   });
+
+  /// Builds TweakcnShadows from parsed tweakcn shadow levels.
+  ///
+  /// Keys are CSS variable names without `--`, and each
+  /// level keeps its layers in the order the CSS lists
+  /// them. A level [shadows] does not carry comes out
+  /// empty, as it does in [light] and [dark], so building
+  /// from a theme's own shadows reproduces its constant.
+  factory TweakcnShadows.fromShadowMap(
+    Map<String, List<TweakcnShadowLayer>> shadows,
+  ) {
+    List<BoxShadow> level(String token) => [
+      for (final layer in shadows[token] ?? const <TweakcnShadowLayer>[])
+        BoxShadow(
+          offset: Offset(layer.offsetX, layer.offsetY),
+          blurRadius: layer.blurRadius,
+          spreadRadius: layer.spreadRadius,
+          color: Color(layer.color),
+        ),
+    ];
+
+    return TweakcnShadows(
+      shadow2xs: level('shadow-2xs'),
+      shadowXs: level('shadow-xs'),
+      shadowSm: level('shadow-sm'),
+      shadow: level('shadow'),
+      shadowMd: level('shadow-md'),
+      shadowLg: level('shadow-lg'),
+      shadowXl: level('shadow-xl'),
+      shadow2xl: level('shadow-2xl'),
+    );
+  }
 
   static const light = TweakcnShadows(
     shadow2xs: [

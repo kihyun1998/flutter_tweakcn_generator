@@ -240,6 +240,96 @@ const _lightColorScheme = ColorScheme(
       expect(generatedCode, contains('static const dark = TweakcnShadows('));
     });
 
+    test('generates the primitive shape a shadow layer crosses in', () {
+      // A record, so the generated file names no type from this package and
+      // a consumer still gets their field names checked.
+      expect(
+        generatedCode,
+        contains('''
+typedef TweakcnShadowLayer = ({
+  double offsetX,
+  double offsetY,
+  double blurRadius,
+  double spreadRadius,
+  int color,
+});'''),
+      );
+    });
+
+    test('generates a runtime factory over the parsed shadows', () {
+      expect(
+        generatedCode,
+        contains(
+          'factory TweakcnShadows.fromShadowMap(\n'
+          '    Map<String, List<TweakcnShadowLayer>> shadows,\n'
+          '  )',
+        ),
+      );
+    });
+
+    test('the shadows factory fills every level the constants declare', () {
+      final factory = _sliceBetween(
+        generatedCode,
+        'factory TweakcnShadows.fromShadowMap',
+        '  }',
+      );
+      final light = _sliceBetween(
+        generatedCode,
+        'static const light = TweakcnShadows(',
+        '\n  );',
+      );
+
+      final declared =
+          RegExp(
+            r'^    (\w+):',
+            multiLine: true,
+          ).allMatches(light).map((m) => m.group(1)).toSet();
+
+      expect(declared, hasLength(8));
+      for (final field in declared) {
+        expect(
+          factory,
+          contains('$field: level('),
+          reason: '$field is a constant field the factory never fills',
+        );
+      }
+    });
+
+    test('the shadows factory keys levels by their CSS token', () {
+      final factory = _sliceBetween(
+        generatedCode,
+        'factory TweakcnShadows.fromShadowMap',
+        '  }',
+      );
+
+      expect(factory, contains("shadow2xs: level('shadow-2xs')"));
+      expect(factory, contains("shadow: level('shadow')"));
+      expect(factory, contains("shadow2xl: level('shadow-2xl')"));
+    });
+
+    test('an undeclared shadow level comes out as the constants do', () {
+      final code =
+          DartThemeGenerator(
+            CssParser.parse(':root { --shadow-md: 0 1px 2px 0 #00000010; }'),
+          ).generate();
+
+      // Levels the CSS does not define are baked in as empty lists, so the
+      // factory has to reach the same thing when the map has no entry.
+      expect(code, contains('shadow2xs: [],'));
+      expect(code, contains("shadows[token] ?? const <TweakcnShadowLayer>[]"));
+    });
+
+    test('the shadows factory follows the class prefix', () {
+      final code =
+          DartThemeGenerator(
+            CssParser.parse(':root { --shadow-md: 0 1px 2px 0 #00000010; }'),
+            classPrefix: 'My',
+          ).generate();
+
+      expect(code, contains('typedef MyShadowLayer = ({'));
+      expect(code, contains('Map<String, List<MyShadowLayer>> shadows'));
+    });
+
     test('generates TweakcnTheme class', () {
       expect(generatedCode, contains('class TweakcnTheme'));
       expect(generatedCode, contains('static ThemeData get light'));

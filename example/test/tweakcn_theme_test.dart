@@ -62,6 +62,19 @@ Map<String, double> _radiusFields(TweakcnRadius r) => {
   'xl': r.xl,
 };
 
+/// Every shadow level the extension carries, by field name. Policed the same
+/// way [_fields] is.
+Map<String, List<BoxShadow>> _shadowFields(TweakcnShadows s) => {
+  'shadow2xs': s.shadow2xs,
+  'shadowXs': s.shadowXs,
+  'shadowSm': s.shadowSm,
+  'shadow': s.shadow,
+  'shadowMd': s.shadowMd,
+  'shadowLg': s.shadowLg,
+  'shadowXl': s.shadowXl,
+  'shadow2xl': s.shadow2xl,
+};
+
 /// The names of the fields the generated class [type] declares.
 ///
 /// Read back out of the generated source because Dart has no reflection here.
@@ -73,7 +86,10 @@ Set<String> _declaredFields(String type) {
   expect(start, isNonNegative, reason: 'no class $type in the generated file');
   final body = source.substring(start);
 
-  return RegExp(r'^  final \w+ (\w+);', multiLine: true)
+  // Matches any type rather than an enumerated few: a pattern that cannot
+  // read a field's type would drop that field, and a field missing from both
+  // sides is exactly what this is here to catch.
+  return RegExp(r'^  final .+ (\w+);', multiLine: true)
       .allMatches(body.substring(0, body.indexOf('\n}')))
       .map((m) => m.group(1)!)
       .toSet();
@@ -88,6 +104,7 @@ void main() {
     for (final entry in {
       'TweakcnColors': _fields(TweakcnColors.light).keys.toSet(),
       'TweakcnRadius': _radiusFields(TweakcnRadius.standard).keys.toSet(),
+      'TweakcnShadows': _shadowFields(TweakcnShadows.light).keys.toSet(),
     }.entries) {
       final declared = _declaredFields(entry.key);
 
@@ -175,6 +192,61 @@ void main() {
         'lg': 8.0,
         'xl': 12.0,
       });
+    });
+  });
+
+  group('TweakcnShadows.fromShadowMap', () {
+    test('rebuilds the light constant from this theme\'s own shadows', () {
+      expect(
+        _shadowFields(TweakcnShadows.fromShadowMap(theme.light.shadowLayers)),
+        _shadowFields(TweakcnShadows.light),
+      );
+    });
+
+    test('rebuilds the dark constant from this theme\'s own shadows', () {
+      expect(
+        _shadowFields(TweakcnShadows.fromShadowMap(theme.dark.shadowLayers)),
+        _shadowFields(TweakcnShadows.dark),
+      );
+    });
+
+    test('keeps a level\'s layers in the order the CSS lists them', () {
+      // --shadow-sm declares two layers, and BoxShadow paints in list order,
+      // so reversing them would be a visible change no field count catches.
+      final built = TweakcnShadows.fromShadowMap(theme.light.shadowLayers);
+
+      expect(built.shadowSm.length, greaterThan(1));
+      expect(
+        built.shadowSm.map((s) => s.offset),
+        TweakcnShadows.light.shadowSm.map((s) => s.offset),
+      );
+    });
+
+    test('gives a level the CSS never defined the same empty list', () {
+      final withoutMd = Map.of(theme.light.shadowLayers)..remove('shadow-md');
+
+      expect(TweakcnShadows.fromShadowMap(withoutMd).shadowMd, isEmpty);
+    });
+
+    test('takes shadow data naming no type from this package', () {
+      // Written out structurally: this is what a consumer can hand over
+      // without importing the generator at all.
+      final built = TweakcnShadows.fromShadowMap({
+        'shadow-md': [
+          (
+            offsetX: 1,
+            offsetY: 2,
+            blurRadius: 3,
+            spreadRadius: -1,
+            color: 0x33000000,
+          ),
+        ],
+      });
+
+      expect(built.shadowMd.single.offset, const Offset(1, 2));
+      expect(built.shadowMd.single.blurRadius, 3);
+      expect(built.shadowMd.single.spreadRadius, -1);
+      expect(built.shadowMd.single.color, const Color(0x33000000));
     });
   });
 }
