@@ -119,11 +119,17 @@ context.myShadows.shadowMd
 
 ## build_runner
 
-Use the `*.tweakcn.css` extension to generate via build_runner:
+Name the CSS with the `*.tweakcn.css` extension and generate with build_runner:
 
 ```bash
 dart run build_runner build
 ```
+
+Each `<name>.tweakcn.css` becomes a `<name>.tweakcn.dart` beside it, so
+`lib/app.tweakcn.css` generates `lib/app.tweakcn.dart`. The `input` and
+`output` settings under `flutter_tweakcn_generator:` in `pubspec.yaml` are for
+the CLI and have no effect here — build_runner decides both from the input's
+own path.
 
 Configure builder options in `build.yaml`:
 

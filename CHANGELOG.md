@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Fix the build_runner builder producing nothing at all. It asked to write `<name>.tweakcn.tweakcn.dart` while declaring `<name>.tweakcn.dart`, and build_runner refuses an output a builder did not declare — so `dart run build_runner build` failed outright rather than writing a misnamed file. One of the two documented ways to use this package had never worked, because nothing exercised the builder: `build_test` was a dev dependency no test used. It now is
+
 - Generated files are now formatted, so a project that runs a format check over its own `lib/` no longer fails it the moment it generates. Previously the output was assembled as strings and written as-is, which left 41 lines of a typical theme past the page width. Note that `dart_style` is now a dependency, deliberately with a wide constraint: the analyzer that the newest one needs wants a newer `meta` than the Flutter SDK pins, so a tight constraint would make this package unresolvable in a Flutter project
 
 - Generated theme extensions now compare by value. They previously had no `==`, so an extension equalled only itself — harmless while the only instances were the baked-in constants, since those are `const`, but not once `fromMap`, `fromRadius` and `fromShadowMap` started building a new one per call. `ThemeData` compares its extensions by value, so a theme rebuilt from unchanged tokens did not equal the previous one and every dependent of `Theme.of` rebuilt. Shadow levels are compared and hashed layer by layer, since a list is equal only to itself too

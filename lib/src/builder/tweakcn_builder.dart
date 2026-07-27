@@ -33,7 +33,12 @@ class TweakcnBuilder implements Builder {
     );
     final dartCode = generator.generate();
 
-    final outputId = inputId.changeExtension('.tweakcn.dart');
+    // `.dart`, not `.tweakcn.dart`: [buildExtensions] names the whole suffix
+    // that replaces `.tweakcn.css`, while `changeExtension` replaces only the
+    // last one. Handing it the whole suffix leaves `.tweakcn` in twice, and
+    // build_runner refuses an output the builder never declared — so the
+    // build failed outright rather than writing a misnamed file.
+    final outputId = inputId.changeExtension('.dart');
     await buildStep.writeAsString(outputId, dartCode);
   }
 }
