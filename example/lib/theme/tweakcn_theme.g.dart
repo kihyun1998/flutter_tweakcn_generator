@@ -115,7 +115,7 @@ class TweakcnColors extends ThemeExtension<TweakcnColors> {
     required this.sidebarRing,
   });
 
-  /// Builds TweakcnColors from parsed tweakcn color tokens.
+  /// Builds the extension from parsed tweakcn color tokens.
   ///
   /// Keys are CSS variable names without `--`, values 32-bit ARGB.
   /// A token [colors] does not carry becomes `Color(0x00000000)`,
@@ -137,7 +137,9 @@ class TweakcnColors extends ThemeExtension<TweakcnColors> {
     accent: Color(colors['accent'] ?? 0x00000000),
     accentForeground: Color(colors['accent-foreground'] ?? 0x00000000),
     destructive: Color(colors['destructive'] ?? 0x00000000),
-    destructiveForeground: Color(colors['destructive-foreground'] ?? 0x00000000),
+    destructiveForeground: Color(
+      colors['destructive-foreground'] ?? 0x00000000,
+    ),
     border: Color(colors['border'] ?? 0x00000000),
     input: Color(colors['input'] ?? 0x00000000),
     ring: Color(colors['ring'] ?? 0x00000000),
@@ -149,9 +151,13 @@ class TweakcnColors extends ThemeExtension<TweakcnColors> {
     sidebar: Color(colors['sidebar'] ?? 0x00000000),
     sidebarForeground: Color(colors['sidebar-foreground'] ?? 0x00000000),
     sidebarPrimary: Color(colors['sidebar-primary'] ?? 0x00000000),
-    sidebarPrimaryForeground: Color(colors['sidebar-primary-foreground'] ?? 0x00000000),
+    sidebarPrimaryForeground: Color(
+      colors['sidebar-primary-foreground'] ?? 0x00000000,
+    ),
     sidebarAccent: Color(colors['sidebar-accent'] ?? 0x00000000),
-    sidebarAccentForeground: Color(colors['sidebar-accent-foreground'] ?? 0x00000000),
+    sidebarAccentForeground: Color(
+      colors['sidebar-accent-foreground'] ?? 0x00000000,
+    ),
     sidebarBorder: Color(colors['sidebar-border'] ?? 0x00000000),
     sidebarRing: Color(colors['sidebar-ring'] ?? 0x00000000),
   );
@@ -277,7 +283,8 @@ class TweakcnColors extends ThemeExtension<TweakcnColors> {
       accent: accent ?? this.accent,
       accentForeground: accentForeground ?? this.accentForeground,
       destructive: destructive ?? this.destructive,
-      destructiveForeground: destructiveForeground ?? this.destructiveForeground,
+      destructiveForeground:
+          destructiveForeground ?? this.destructiveForeground,
       border: border ?? this.border,
       input: input ?? this.input,
       ring: ring ?? this.ring,
@@ -289,9 +296,11 @@ class TweakcnColors extends ThemeExtension<TweakcnColors> {
       sidebar: sidebar ?? this.sidebar,
       sidebarForeground: sidebarForeground ?? this.sidebarForeground,
       sidebarPrimary: sidebarPrimary ?? this.sidebarPrimary,
-      sidebarPrimaryForeground: sidebarPrimaryForeground ?? this.sidebarPrimaryForeground,
+      sidebarPrimaryForeground:
+          sidebarPrimaryForeground ?? this.sidebarPrimaryForeground,
       sidebarAccent: sidebarAccent ?? this.sidebarAccent,
-      sidebarAccentForeground: sidebarAccentForeground ?? this.sidebarAccentForeground,
+      sidebarAccentForeground:
+          sidebarAccentForeground ?? this.sidebarAccentForeground,
       sidebarBorder: sidebarBorder ?? this.sidebarBorder,
       sidebarRing: sidebarRing ?? this.sidebarRing,
     );
@@ -306,17 +315,37 @@ class TweakcnColors extends ThemeExtension<TweakcnColors> {
       card: Color.lerp(card, other.card, t)!,
       cardForeground: Color.lerp(cardForeground, other.cardForeground, t)!,
       popover: Color.lerp(popover, other.popover, t)!,
-      popoverForeground: Color.lerp(popoverForeground, other.popoverForeground, t)!,
+      popoverForeground: Color.lerp(
+        popoverForeground,
+        other.popoverForeground,
+        t,
+      )!,
       primary: Color.lerp(primary, other.primary, t)!,
-      primaryForeground: Color.lerp(primaryForeground, other.primaryForeground, t)!,
+      primaryForeground: Color.lerp(
+        primaryForeground,
+        other.primaryForeground,
+        t,
+      )!,
       secondary: Color.lerp(secondary, other.secondary, t)!,
-      secondaryForeground: Color.lerp(secondaryForeground, other.secondaryForeground, t)!,
+      secondaryForeground: Color.lerp(
+        secondaryForeground,
+        other.secondaryForeground,
+        t,
+      )!,
       muted: Color.lerp(muted, other.muted, t)!,
       mutedForeground: Color.lerp(mutedForeground, other.mutedForeground, t)!,
       accent: Color.lerp(accent, other.accent, t)!,
-      accentForeground: Color.lerp(accentForeground, other.accentForeground, t)!,
+      accentForeground: Color.lerp(
+        accentForeground,
+        other.accentForeground,
+        t,
+      )!,
       destructive: Color.lerp(destructive, other.destructive, t)!,
-      destructiveForeground: Color.lerp(destructiveForeground, other.destructiveForeground, t)!,
+      destructiveForeground: Color.lerp(
+        destructiveForeground,
+        other.destructiveForeground,
+        t,
+      )!,
       border: Color.lerp(border, other.border, t)!,
       input: Color.lerp(input, other.input, t)!,
       ring: Color.lerp(ring, other.ring, t)!,
@@ -326,11 +355,23 @@ class TweakcnColors extends ThemeExtension<TweakcnColors> {
       chart4: Color.lerp(chart4, other.chart4, t)!,
       chart5: Color.lerp(chart5, other.chart5, t)!,
       sidebar: Color.lerp(sidebar, other.sidebar, t)!,
-      sidebarForeground: Color.lerp(sidebarForeground, other.sidebarForeground, t)!,
+      sidebarForeground: Color.lerp(
+        sidebarForeground,
+        other.sidebarForeground,
+        t,
+      )!,
       sidebarPrimary: Color.lerp(sidebarPrimary, other.sidebarPrimary, t)!,
-      sidebarPrimaryForeground: Color.lerp(sidebarPrimaryForeground, other.sidebarPrimaryForeground, t)!,
+      sidebarPrimaryForeground: Color.lerp(
+        sidebarPrimaryForeground,
+        other.sidebarPrimaryForeground,
+        t,
+      )!,
       sidebarAccent: Color.lerp(sidebarAccent, other.sidebarAccent, t)!,
-      sidebarAccentForeground: Color.lerp(sidebarAccentForeground, other.sidebarAccentForeground, t)!,
+      sidebarAccentForeground: Color.lerp(
+        sidebarAccentForeground,
+        other.sidebarAccentForeground,
+        t,
+      )!,
       sidebarBorder: Color.lerp(sidebarBorder, other.sidebarBorder, t)!,
       sidebarRing: Color.lerp(sidebarRing, other.sidebarRing, t)!,
     );
@@ -427,7 +468,8 @@ class TweakcnRadius extends ThemeExtension<TweakcnRadius> {
     required this.xl,
   });
 
-  /// Builds TweakcnRadius from a parsed radius, in logical pixels.
+  /// Builds the extension from a parsed radius, in logical
+  /// pixels.
   ///
   /// `lg` is the radius itself, `md` two less, `sm` four
   /// less and `xl` four more, with `sm` and `md` held at
@@ -438,8 +480,7 @@ class TweakcnRadius extends ThemeExtension<TweakcnRadius> {
   /// returns for 10.0, the radius this theme resolved to.
   factory TweakcnRadius.fromRadius(double? radius) {
     final base = radius ?? 8.0;
-    double atLeastZero(double value) =>
-        value < 0 ? 0 : value;
+    double atLeastZero(double value) => value < 0 ? 0 : value;
 
     return TweakcnRadius(
       sm: atLeastZero(base - 4),
@@ -449,20 +490,10 @@ class TweakcnRadius extends ThemeExtension<TweakcnRadius> {
     );
   }
 
-  static const standard = TweakcnRadius(
-    sm: 6.0,
-    md: 8.0,
-    lg: 10.0,
-    xl: 14.0,
-  );
+  static const standard = TweakcnRadius(sm: 6.0, md: 8.0, lg: 10.0, xl: 14.0);
 
   @override
-  TweakcnRadius copyWith({
-    double? sm,
-    double? md,
-    double? lg,
-    double? xl,
-  }) {
+  TweakcnRadius copyWith({double? sm, double? md, double? lg, double? xl}) {
     return TweakcnRadius(
       sm: sm ?? this.sm,
       md: md ?? this.md,
@@ -492,12 +523,7 @@ class TweakcnRadius extends ThemeExtension<TweakcnRadius> {
           xl == other.xl;
 
   @override
-  int get hashCode => Object.hashAll([
-    sm,
-    md,
-    lg,
-    xl,
-  ]);
+  int get hashCode => Object.hashAll([sm, md, lg, xl]);
 }
 
 // ──────────────────────────────────────────
@@ -538,7 +564,7 @@ class TweakcnShadows extends ThemeExtension<TweakcnShadows> {
     required this.shadow2xl,
   });
 
-  /// Builds TweakcnShadows from parsed tweakcn shadow levels.
+  /// Builds the extension from parsed tweakcn shadow levels.
   ///
   /// Keys are CSS variable names without `--`, and each
   /// level keeps its layers in the order the CSS lists
@@ -572,65 +598,195 @@ class TweakcnShadows extends ThemeExtension<TweakcnShadows> {
 
   static const light = TweakcnShadows(
     shadow2xs: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x03000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x03000000),
+      ),
     ],
     shadowXs: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x03000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x03000000),
+      ),
     ],
     shadowSm: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x08000000)),
-      BoxShadow(offset: Offset(1.0, 1.0), blurRadius: 2.0, spreadRadius: -1.0, color: Color(0x08000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x08000000),
+      ),
+      BoxShadow(
+        offset: Offset(1.0, 1.0),
+        blurRadius: 2.0,
+        spreadRadius: -1.0,
+        color: Color(0x08000000),
+      ),
     ],
     shadow: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x08000000)),
-      BoxShadow(offset: Offset(1.0, 1.0), blurRadius: 2.0, spreadRadius: -1.0, color: Color(0x08000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x08000000),
+      ),
+      BoxShadow(
+        offset: Offset(1.0, 1.0),
+        blurRadius: 2.0,
+        spreadRadius: -1.0,
+        color: Color(0x08000000),
+      ),
     ],
     shadowMd: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x08000000)),
-      BoxShadow(offset: Offset(1.0, 2.0), blurRadius: 4.0, spreadRadius: -1.0, color: Color(0x08000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x08000000),
+      ),
+      BoxShadow(
+        offset: Offset(1.0, 2.0),
+        blurRadius: 4.0,
+        spreadRadius: -1.0,
+        color: Color(0x08000000),
+      ),
     ],
     shadowLg: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x08000000)),
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 6.0, spreadRadius: -1.0, color: Color(0x08000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x08000000),
+      ),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 6.0,
+        spreadRadius: -1.0,
+        color: Color(0x08000000),
+      ),
     ],
     shadowXl: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x08000000)),
-      BoxShadow(offset: Offset(1.0, 8.0), blurRadius: 10.0, spreadRadius: -1.0, color: Color(0x08000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x08000000),
+      ),
+      BoxShadow(
+        offset: Offset(1.0, 8.0),
+        blurRadius: 10.0,
+        spreadRadius: -1.0,
+        color: Color(0x08000000),
+      ),
     ],
     shadow2xl: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x12000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x12000000),
+      ),
     ],
   );
 
   static const dark = TweakcnShadows(
     shadow2xs: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x03000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x03000000),
+      ),
     ],
     shadowXs: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x03000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x03000000),
+      ),
     ],
     shadowSm: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x08000000)),
-      BoxShadow(offset: Offset(1.0, 1.0), blurRadius: 2.0, spreadRadius: -1.0, color: Color(0x08000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x08000000),
+      ),
+      BoxShadow(
+        offset: Offset(1.0, 1.0),
+        blurRadius: 2.0,
+        spreadRadius: -1.0,
+        color: Color(0x08000000),
+      ),
     ],
     shadow: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x08000000)),
-      BoxShadow(offset: Offset(1.0, 1.0), blurRadius: 2.0, spreadRadius: -1.0, color: Color(0x08000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x08000000),
+      ),
+      BoxShadow(
+        offset: Offset(1.0, 1.0),
+        blurRadius: 2.0,
+        spreadRadius: -1.0,
+        color: Color(0x08000000),
+      ),
     ],
     shadowMd: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x08000000)),
-      BoxShadow(offset: Offset(1.0, 2.0), blurRadius: 4.0, spreadRadius: -1.0, color: Color(0x08000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x08000000),
+      ),
+      BoxShadow(
+        offset: Offset(1.0, 2.0),
+        blurRadius: 4.0,
+        spreadRadius: -1.0,
+        color: Color(0x08000000),
+      ),
     ],
     shadowLg: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x08000000)),
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 6.0, spreadRadius: -1.0, color: Color(0x08000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x08000000),
+      ),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 6.0,
+        spreadRadius: -1.0,
+        color: Color(0x08000000),
+      ),
     ],
     shadowXl: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x08000000)),
-      BoxShadow(offset: Offset(1.0, 8.0), blurRadius: 10.0, spreadRadius: -1.0, color: Color(0x08000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x08000000),
+      ),
+      BoxShadow(
+        offset: Offset(1.0, 8.0),
+        blurRadius: 10.0,
+        spreadRadius: -1.0,
+        color: Color(0x08000000),
+      ),
     ],
     shadow2xl: [
-      BoxShadow(offset: Offset(1.0, 4.0), blurRadius: 5.0, spreadRadius: 0.0, color: Color(0x12000000)),
+      BoxShadow(
+        offset: Offset(1.0, 4.0),
+        blurRadius: 5.0,
+        spreadRadius: 0.0,
+        color: Color(0x12000000),
+      ),
     ],
   );
 
@@ -735,5 +891,6 @@ class TweakcnTheme {
 extension TweakcnBuildContext on BuildContext {
   TweakcnColors get tweakcnColors => Theme.of(this).extension<TweakcnColors>()!;
   TweakcnRadius get tweakcnRadius => Theme.of(this).extension<TweakcnRadius>()!;
-  TweakcnShadows get tweakcnShadows => Theme.of(this).extension<TweakcnShadows>()!;
+  TweakcnShadows get tweakcnShadows =>
+      Theme.of(this).extension<TweakcnShadows>()!;
 }

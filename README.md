@@ -389,6 +389,15 @@ them inside `example/` where `package:flutter` resolves, and deletes them
 again. It exits non-zero and reprints the analyzer's own message when any of
 them fails to compile.
 
+It also checks that the theme committed under `example/` is still what the
+generator writes for the example's CSS. If it is not, regenerate it — the
+example is committed exactly as generated, so that it shows what a consumer's
+output actually looks like:
+
+```bash
+cd example && dart run flutter_tweakcn_generator
+```
+
 Run it whenever you change what the generator emits. `dart test` compares the
 emitted text against text, so it cannot catch a generated file that does not
 build: a `ColorScheme` missing a parameter a new Flutter release made

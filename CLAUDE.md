@@ -11,7 +11,7 @@ dart run tool/verify_generated_output.dart
 cd example && flutter test
 ```
 
-The first compiles the generated output for six theme shapes against the real SDK inside `example/`, which must have its packages resolved (`flutter pub get`).
+The first compiles the generated output for six theme shapes against the real SDK inside `example/`, which must have its packages resolved (`flutter pub get`). It also fails when the theme committed under `example/` is no longer what the generator writes — regenerate it with `cd example && dart run flutter_tweakcn_generator`, since the example is committed exactly as generated.
 
 The second runs the generated code. It is also the only thing that type-checks the seam between the package and its output: `ThemeModeData.shadowLayers` produces the record type the generated `fromShadowMap` takes, and nothing else in the repo puts those two declarations in the same compilation. Adding a field to one and not the other fails only here.
 

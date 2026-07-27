@@ -40,7 +40,15 @@ Future<void> main(List<String> args) async {
     classPrefix: config.classPrefix,
     fontMode: config.fontMode,
   );
-  final dartCode = generator.generate();
+  final String dartCode;
+  try {
+    dartCode = generator.generate();
+  } on StateError catch (e) {
+    // Only a generator bug reaches here, but it should still arrive looking
+    // like every other failure this CLI reports rather than as a stack trace.
+    stderr.writeln('Error: ${e.message}');
+    exit(1);
+  }
 
   // ColorScheme requires these, so a fallback was generated rather than an
   // uncompilable file. Say so — a substituted color is almost never what the

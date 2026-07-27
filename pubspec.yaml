@@ -18,6 +18,16 @@ dependencies:
   build: ">=2.0.0 <5.0.0"
   yaml: ^3.1.0
   path: ^1.9.0
+  # Formats the generated output. Deliberately wide, and NOT `^<newest>`: the
+  # analyzer that the newest dart_style depends on wants a newer `meta` than
+  # the Flutter SDK pins, so raising the floor to it makes this package
+  # unresolvable in every Flutter project — which is every project that uses
+  # it. A Flutter project resolves the floor; this package resolves the top.
+  # The floor is 3.1.1 rather than 3.0.0 because those two format this
+  # generator's output differently, and 3.1.1 and the current top do not — so
+  # the theme committed under example/ is the same file either way. Check that
+  # again before moving either end.
+  dart_style: ">=3.1.1 <4.0.0"
 
 dev_dependencies:
   build_runner: ">=2.0.0 <3.0.0"

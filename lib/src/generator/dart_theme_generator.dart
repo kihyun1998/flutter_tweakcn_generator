@@ -1,6 +1,7 @@
 import '../models/tweakcn_theme_data.dart';
 import '../parser/shadow_parser.dart';
 import 'color_scheme_resolver.dart';
+import 'source_formatter.dart';
 
 /// Generates a complete Dart theme file from [TweakcnThemeData].
 ///
@@ -51,7 +52,7 @@ class DartThemeGenerator {
     _writeThemeClass(buf, googleFonts);
     _writeBuildContextExtension(buf);
 
-    return buf.toString();
+    return formatGeneratedSource(buf.toString());
   }
 
   // -- ColorScheme ----------------------------------------------------------
@@ -290,7 +291,7 @@ class DartThemeGenerator {
     // `Map<String, int>` rather than this package's parsed type: the generated
     // file imports Flutter and nothing else, and a consumer who takes this
     // package as a dev dependency should not have to keep it at runtime.
-    buf.writeln('  /// Builds $cls from parsed tweakcn color tokens.');
+    buf.writeln('  /// Builds the extension from parsed tweakcn color tokens.');
     buf.writeln('  ///');
     buf.writeln(
       '  /// Keys are CSS variable names without `--`, values 32-bit ARGB.',
@@ -409,7 +410,8 @@ class DartThemeGenerator {
   /// theme from CSS parsed at runtime had to reimplement the arithmetic and
   /// would drift from it if it ever changed.
   void _writeRadiusFromRadius(StringBuffer buf, String cls, double radius) {
-    buf.writeln('  /// Builds $cls from a parsed radius, in logical pixels.');
+    buf.writeln('  /// Builds the extension from a parsed radius, in logical');
+    buf.writeln('  /// pixels.');
     buf.writeln('  ///');
     buf.writeln('  /// `lg` is the radius itself, `md` two less, `sm` four');
     buf.writeln('  /// less and `xl` four more, with `sm` and `md` held at');
@@ -562,7 +564,9 @@ class DartThemeGenerator {
   /// Written over [_shadowTokens] like every other member, so a level added
   /// there is a level the factory fills.
   void _writeShadowsFromMap(StringBuffer buf, String cls, String layer) {
-    buf.writeln('  /// Builds $cls from parsed tweakcn shadow levels.');
+    buf.writeln(
+      '  /// Builds the extension from parsed tweakcn shadow levels.',
+    );
     buf.writeln('  ///');
     buf.writeln('  /// Keys are CSS variable names without `--`, and each');
     buf.writeln('  /// level keeps its layers in the order the CSS lists');

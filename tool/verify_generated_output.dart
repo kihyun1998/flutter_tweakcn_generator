@@ -31,6 +31,7 @@ library;
 
 import 'dart:io';
 
+import 'package:flutter_tweakcn_generator/src/config.dart';
 import 'package:flutter_tweakcn_generator/src/generator/dart_theme_generator.dart';
 import 'package:flutter_tweakcn_generator/src/parser/css_parser.dart';
 import 'package:path/path.dart' as p;
@@ -158,6 +159,40 @@ List<VerificationCase> verificationCases(Directory repoRoot) => [
   ),
 ];
 
+/// Why the example's committed theme no longer matches what the generator
+/// writes for it, or null when it still does.
+///
+/// The example is meant to show what a consumer's output looks like, so it is
+/// committed exactly as generated. Nothing else notices when a change to the
+/// emitted code leaves it behind — it compiles either way, and the difference
+/// only turns up as an unexplained diff in someone's working tree.
+String? staleExampleTheme(Directory exampleDir) {
+  final config = TweakcnConfig.fromPubspec(exampleDir.path);
+  final css = File(p.join(exampleDir.path, config.input));
+  final committed = File(p.join(exampleDir.path, config.output));
+  // Reported rather than skipped: a check that quietly passes when it cannot
+  // find what it compares is worse than no check.
+  if (!css.existsSync()) return 'No ${config.input} in $exampleDirName/.';
+  if (!committed.existsSync()) {
+    return 'No ${config.output} in $exampleDirName/ to compare against.';
+  }
+
+  final expected =
+      DartThemeGenerator(
+        CssParser.parse(css.readAsStringSync()),
+        classPrefix: config.classPrefix,
+        fontMode: config.fontMode,
+      ).generate();
+
+  if (committed.readAsStringSync().replaceAll('\r\n', '\n') ==
+      expected.replaceAll('\r\n', '\n')) {
+    return null;
+  }
+  return 'The example theme at ${config.output} is not what the generator '
+      'now writes for ${config.input}.\n'
+      'Regenerate it: cd $exampleDirName && dart run flutter_tweakcn_generator';
+}
+
 /// Generates [cases] into [target], one file each, and returns what it wrote.
 ///
 /// [target] is emptied first, so a run never analyzes a file left behind by an
@@ -189,6 +224,12 @@ int _run(Directory repoRoot) {
       'not resolve and every case would fail for the wrong reason.\n'
       'Run `flutter pub get` in $exampleDirName/ first.',
     );
+    return 1;
+  }
+
+  final stale = staleExampleTheme(exampleDir);
+  if (stale != null) {
+    stderr.writeln(stale);
     return 1;
   }
 

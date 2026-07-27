@@ -1,7 +1,9 @@
 import 'dart:io';
 
+import 'package:dart_style/dart_style.dart';
 import 'package:flutter_tweakcn_generator/src/generator/color_scheme_resolver.dart';
 import 'package:flutter_tweakcn_generator/src/generator/dart_theme_generator.dart';
+import 'package:flutter_tweakcn_generator/src/generator/source_formatter.dart';
 import 'package:flutter_tweakcn_generator/src/parser/css_parser.dart';
 import 'package:test/test.dart';
 
@@ -20,6 +22,54 @@ void main() {
       expect(
         generatedCode,
         contains("import 'package:flutter/material.dart';"),
+      );
+    });
+
+    test('emits code that is already formatted', () {
+      // Whatever a consumer runs `dart format` over their project with has
+      // nothing to say about a file this wrote, so their format check does
+      // not fail the moment they generate.
+      expect(
+        DartFormatter(
+          languageVersion: DartFormatter.latestLanguageVersion,
+        ).format(generatedCode),
+        generatedCode,
+      );
+    });
+
+    test('keeps its lines inside the page width for any sane prefix', () {
+      // Formatting alone does not deliver this: the formatter reflows code but
+      // never comments, so a comment the writers build out of the class name
+      // grows with the prefix until it runs past the width. Nor can the claim
+      // be unbounded — past about sixty characters the class names themselves
+      // approach the page width, and an identifier cannot be broken. Forty
+      // eight is far beyond any prefix anyone would type.
+      final code =
+          DartThemeGenerator(
+            CssParser.parse(
+              File('test/fixtures/sample_hex.css').readAsStringSync(),
+            ),
+            classPrefix: 'P' * 48,
+          ).generate();
+
+      for (final line in code.split('\n')) {
+        expect(line.length, lessThanOrEqualTo(80), reason: line);
+      }
+    });
+
+    test('says so when it produces source it cannot format', () {
+      // Only reachable through a bug in the generator, which is why the
+      // message says that rather than blaming the CSS. The alternative is
+      // writing unparseable source out as if nothing happened.
+      expect(
+        () => formatGeneratedSource('class Broken {'),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('bug in the generator'), contains('does not parse')),
+          ),
+        ),
       );
     });
 
@@ -83,30 +133,27 @@ const _lightColorScheme = ColorScheme(
       );
     });
 
-    test('the factory reads every token the constants declare', () {
+    test('the factory reads every field the class declares', () {
+      final body = _sliceBetween(
+        generatedCode,
+        'class TweakcnColors extends',
+        '\n}',
+      );
       final factory = _sliceBetween(
         generatedCode,
         'factory TweakcnColors.fromMap',
-        '  );',
-      );
-      final light = _sliceBetween(
-        generatedCode,
-        'static const light = TweakcnColors(',
-        '  );',
+        '\n  );',
       );
 
-      final declared =
-          RegExp(
-            r'^    (\w+): ',
-            multiLine: true,
-          ).allMatches(light).map((m) => m.group(1)).toList();
-
+      final declared = _declaredFields(body);
       expect(declared, isNotEmpty);
       for (final field in declared) {
+        // Whitespace-tolerant: the formatter wraps the longest of these, so
+        // matching the unbroken text would only assert about the short ones.
         expect(
           factory,
-          contains('$field: Color(colors['),
-          reason: '$field is a constant field the factory never fills',
+          matches(RegExp('$field:\\s*Color\\(\\s*colors\\[')),
+          reason: '$field is a declared field the factory never fills',
         );
       }
     });
@@ -146,37 +193,28 @@ const _lightColorScheme = ColorScheme(
     });
 
     test('gives every extension value equality over all of its fields', () {
-      // Derived from each class's own constant rather than listed here: a
-      // field the generator adds and equality forgets is exactly the drift
-      // this catches, and a list written out here would forget it too.
-      for (final (cls, constant, compare) in [
-        ('TweakcnColors', 'light', (String f) => '$f == other.$f'),
-        ('TweakcnRadius', 'standard', (String f) => '$f == other.$f'),
-        ('TweakcnShadows', 'light', (String f) => 'listEquals($f, other.$f)'),
+      // Derived from each class's own field declarations rather than listed
+      // here: a field the generator adds and equality forgets is exactly the
+      // drift this catches, and a list written out here would forget it too.
+      for (final (cls, compare) in [
+        ('TweakcnColors', (String f) => '$f == other.$f'),
+        ('TweakcnRadius', (String f) => '$f == other.$f'),
+        ('TweakcnShadows', (String f) => 'listEquals($f, other.$f)'),
       ]) {
         final body = _sliceBetween(generatedCode, 'class $cls extends', '\n}');
-        final instance = _sliceBetween(
-          generatedCode,
-          'static const $constant = $cls(',
-          '\n  );',
-        );
-        final fields =
-            RegExp(
-              r'^    (\w+):',
-              multiLine: true,
-            ).allMatches(instance).map((m) => m.group(1)!).toList();
+        final fields = _declaredFields(body);
 
         expect(fields, isNotEmpty, reason: 'found no fields on $cls');
+        expect(
+          body,
+          contains('int get hashCode => Object.hashAll(['),
+          reason: '$cls does not hash by value',
+        );
         for (final field in fields) {
           expect(
             body,
             contains(compare(field)),
             reason: '$cls.$field is a field equality never looks at',
-          );
-          expect(
-            body,
-            contains('int get hashCode => Object.hashAll(['),
-            reason: '$cls does not hash by value',
           );
         }
       }
@@ -258,16 +296,7 @@ const _lightColorScheme = ColorScheme(
           DartThemeGenerator(
             CssParser.parse(':root { --radius: 0.125rem; }'),
           ).generate();
-      final standard = _sliceBetween(
-        code,
-        'static const standard = TweakcnRadius(',
-        '  );',
-      );
-
-      expect(standard, contains('sm: 0.0,'));
-      expect(standard, contains('md: 0.0,'));
-      expect(standard, contains('lg: 2.0,'));
-      expect(standard, contains('xl: 6.0,'));
+      expect(code, _declaresRadius(sm: 0, md: 0, lg: 2, xl: 6));
     });
 
     test('the radius factory follows the class prefix', () {
@@ -967,6 +996,33 @@ typedef TweakcnShadowLayer = ({
     });
   });
 }
+
+/// Matches generated code whose radius constant holds exactly these steps.
+///
+/// Written as a pattern because the formatter puts the four on one line when
+/// they fit and four lines when they do not, which is not what is under test.
+Matcher _declaresRadius({
+  required int sm,
+  required int md,
+  required int lg,
+  required int xl,
+}) => matches(
+  RegExp(
+    r'standard = \w*Radius\(\s*'
+    'sm: $sm\\.0,\\s*md: $md\\.0,\\s*lg: $lg\\.0,\\s*xl: $xl\\.0,?\\s*\\)',
+  ),
+);
+
+/// The names of the fields declared in a generated class [body].
+///
+/// A field declaration is one line whatever the formatter does with the rest
+/// of the class, which the baked-in constants are not: a short one collapses
+/// onto a single line and a long one does not.
+List<String> _declaredFields(String body) =>
+    RegExp(
+      r'^  final .+ (\w+);',
+      multiLine: true,
+    ).allMatches(body).map((m) => m.group(1)!).toList();
 
 /// The slice of [code] from [start] up to the next [end] after it.
 ///
