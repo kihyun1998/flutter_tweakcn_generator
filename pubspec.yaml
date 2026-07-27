@@ -28,6 +28,7 @@ dependencies:
   # the theme committed under example/ is the same file either way. Check that
   # again before moving either end.
   dart_style: ">=3.1.1 <4.0.0"
+  pub_semver: ^2.2.0
 
 dev_dependencies:
   build_runner: ">=2.0.0 <3.0.0"

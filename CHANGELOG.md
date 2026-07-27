@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Fix generated files failing `dart format` in a project that declares an older SDK. `dart format` takes its language version from the `environment: sdk:` constraint of the package it runs in, and formats differently across versions; the generator was formatting at the newest version it could resolve. A project declaring `>=3.7.0 <4.0.0` — the constraint this package declares for itself — got a file that failed its own format check. Both the CLI and the builder now read the consuming project's constraint and format at that version
+
 - Fix the build_runner builder producing nothing at all. It asked to write `<name>.tweakcn.tweakcn.dart` while declaring `<name>.tweakcn.dart`, and build_runner refuses an output a builder did not declare — so `dart run build_runner build` failed outright rather than writing a misnamed file. One of the two documented ways to use this package had never worked, because nothing exercised the builder: `build_test` was a dev dependency no test used. It now is
 
 - Generated files are now formatted, so a project that runs a format check over its own `lib/` no longer fails it the moment it generates. Previously the output was assembled as strings and written as-is, which left 41 lines of a typical theme past the page width. Note that `dart_style` is now a dependency, deliberately with a wide constraint: the analyzer that the newest one needs wants a newer `meta` than the Flutter SDK pins, so a tight constraint would make this package unresolvable in a Flutter project

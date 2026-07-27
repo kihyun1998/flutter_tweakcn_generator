@@ -1,3 +1,5 @@
+import 'package:pub_semver/pub_semver.dart';
+
 import '../models/tweakcn_theme_data.dart';
 import '../parser/shadow_parser.dart';
 import 'color_scheme_resolver.dart';
@@ -21,10 +23,21 @@ class DartThemeGenerator {
   /// Font mode: `'google_fonts'`, `'local'`, or `'custom'`.
   final String fontMode;
 
+  /// The language version to format the output at — the one the project being
+  /// generated into declares, not the one this package resolves.
+  ///
+  /// `dart format` reads it from that project's own `environment: sdk:`
+  /// constraint and formats differently across versions, so getting this wrong
+  /// leaves a generated file that fails the consumer's own format check. Null
+  /// formats at the newest version known, which is right for a project that
+  /// declares nothing older.
+  final Version? languageVersion;
+
   DartThemeGenerator(
     this.data, {
     this.classPrefix = 'Tweakcn',
     this.fontMode = 'google_fonts',
+    this.languageVersion,
   });
 
   /// Generates the full Dart source code as a single string.
@@ -52,7 +65,10 @@ class DartThemeGenerator {
     _writeThemeClass(buf, googleFonts);
     _writeBuildContextExtension(buf);
 
-    return formatGeneratedSource(buf.toString());
+    return formatGeneratedSource(
+      buf.toString(),
+      languageVersion: languageVersion,
+    );
   }
 
   // -- ColorScheme ----------------------------------------------------------

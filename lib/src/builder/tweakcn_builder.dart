@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:build/build.dart';
 
 import '../generator/dart_theme_generator.dart';
+import '../generator/source_formatter.dart';
 import '../parser/css_parser.dart';
 
 /// A [Builder] that converts `.tweakcn.css` files to `.tweakcn.dart` files.
@@ -25,11 +26,21 @@ class TweakcnBuilder implements Builder {
     final inputId = buildStep.inputId;
     final css = await buildStep.readAsString(inputId);
 
+    // The consumer's own pubspec, read as an asset: `dart format` run in their
+    // project uses the language version it declares, and output formatted at
+    // any other one fails their format check.
+    final pubspec = AssetId(inputId.package, 'pubspec.yaml');
+    final languageVersion =
+        await buildStep.canRead(pubspec)
+            ? languageVersionFromPubspec(await buildStep.readAsString(pubspec))
+            : null;
+
     final themeData = CssParser.parse(css);
     final generator = DartThemeGenerator(
       themeData,
       classPrefix: classPrefix,
       fontMode: fontMode,
+      languageVersion: languageVersion,
     );
     final dartCode = generator.generate();
 

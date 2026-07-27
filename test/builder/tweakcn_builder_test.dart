@@ -3,6 +3,7 @@ import 'package:build_test/build_test.dart';
 import 'package:flutter_tweakcn_generator/builder.dart';
 import 'package:flutter_tweakcn_generator/src/generator/dart_theme_generator.dart';
 import 'package:flutter_tweakcn_generator/src/parser/css_parser.dart';
+import 'package:pub_semver/pub_semver.dart';
 import 'package:test/test.dart';
 
 const _css = '''
@@ -25,9 +26,14 @@ void main() {
   Future<void> expectBuilds(
     Object expected, {
     Map<String, dynamic> options = const {},
+    String? sdkConstraint,
   }) => testBuilder(
     tweakcnBuilder(BuilderOptions(options)),
-    const {'a|lib/app.tweakcn.css': _css},
+    {
+      'a|lib/app.tweakcn.css': _css,
+      if (sdkConstraint != null)
+        'a|pubspec.yaml': 'name: a\nenvironment:\n  sdk: "$sdkConstraint"\n',
+    },
     outputs: {'a|lib/app.tweakcn.dart': expected},
   );
 
@@ -61,6 +67,25 @@ void main() {
           ),
         ),
         options: {'font_mode': 'local'},
+      );
+    });
+
+    test('formats at the language version the consumer declares', () {
+      // `dart format` in their project uses that version, so output formatted
+      // at any other one fails the check they run over their own lib/.
+      return expectBuilds(
+        DartThemeGenerator(
+          CssParser.parse(_css),
+          languageVersion: Version(3, 7, 0),
+        ).generate(),
+        sdkConstraint: '>=3.7.0 <4.0.0',
+      );
+    });
+
+    test('leaves the newest version when the consumer declares none', () {
+      return expectBuilds(
+        DartThemeGenerator(CssParser.parse(_css)).generate(),
+        sdkConstraint: null,
       );
     });
   });
