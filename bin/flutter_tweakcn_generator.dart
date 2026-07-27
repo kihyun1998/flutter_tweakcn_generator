@@ -7,7 +7,7 @@ import 'package:flutter_tweakcn_generator/src/font/font_downloader.dart';
 import 'package:flutter_tweakcn_generator/src/font/pubspec_font_adder.dart';
 import 'package:flutter_tweakcn_generator/src/font/pubspec_font_declarations.dart';
 import 'package:flutter_tweakcn_generator/src/generator/dart_theme_generator.dart';
-import 'package:flutter_tweakcn_generator/src/generator/source_formatter.dart';
+import 'package:flutter_tweakcn_generator/src/generator/language_version.dart';
 import 'package:flutter_tweakcn_generator/src/parser/css_parser.dart';
 import 'package:path/path.dart' as p;
 

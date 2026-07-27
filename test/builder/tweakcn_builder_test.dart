@@ -27,11 +27,14 @@ void main() {
     Object expected, {
     Map<String, dynamic> options = const {},
     String? sdkConstraint,
+    String? pubspec,
   }) => testBuilder(
     tweakcnBuilder(BuilderOptions(options)),
     {
       'a|lib/app.tweakcn.css': _css,
-      if (sdkConstraint != null)
+      if (pubspec != null)
+        'a|pubspec.yaml': pubspec
+      else if (sdkConstraint != null)
         'a|pubspec.yaml': 'name: a\nenvironment:\n  sdk: "$sdkConstraint"\n',
     },
     outputs: {'a|lib/app.tweakcn.dart': expected},
@@ -82,10 +85,16 @@ void main() {
       );
     });
 
-    test('leaves the newest version when the consumer declares none', () {
+    test('leaves the newest version when there is no pubspec to read', () {
+      return expectBuilds(DartThemeGenerator(CssParser.parse(_css)).generate());
+    });
+
+    test('leaves the newest version when the pubspec names no SDK', () {
+      // A pubspec that exists and says nothing is a different path from one
+      // that is not there at all, and the one a consumer is likelier to have.
       return expectBuilds(
         DartThemeGenerator(CssParser.parse(_css)).generate(),
-        sdkConstraint: null,
+        pubspec: 'name: a\n',
       );
     });
   });

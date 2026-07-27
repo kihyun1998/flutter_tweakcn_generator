@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:build/build.dart';
 
 import '../generator/dart_theme_generator.dart';
-import '../generator/source_formatter.dart';
+import '../generator/language_version.dart';
 import '../parser/css_parser.dart';
 
 /// A [Builder] that converts `.tweakcn.css` files to `.tweakcn.dart` files.
