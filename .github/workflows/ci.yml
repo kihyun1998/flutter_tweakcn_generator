@@ -18,7 +18,7 @@ jobs:
     name: Analyze and test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dart-lang/setup-dart@v1
       # `--no-example` because `pub get` otherwise resolves `example/` too, and
       # the example is a Flutter app. Without it this job cannot even install
@@ -37,7 +37,7 @@ jobs:
     name: Compile and run generated output
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Deliberately not pinned to a Flutter version. Pinning would make this
       # job blind to exactly the thing it exists to catch — the SDK changing
       # under generated code that no longer compiles against it.
