@@ -1,4 +1,12 @@
-## Unreleased
+## 0.4.0
+
+Generated themes can now be built at runtime, not only baked in at generation
+time: each extension gets a factory over the tokens the parser produces. The
+generated file still imports Flutter and nothing else.
+
+This release adds `dart_style` and `pub_semver` as dependencies, both used to
+format the generated output. `dart_style` is constrained deliberately widely —
+see the note in `pubspec.yaml` before changing it.
 
 - Fix generated files failing `dart format` in a project that declares an older SDK. `dart format` takes its language version from the `environment: sdk:` constraint of the package it runs in, and formats differently across versions; the generator was formatting at the newest version it could resolve. A project declaring `>=3.7.0 <4.0.0` — the constraint this package declares for itself — got a file that failed its own format check. Both the CLI and the builder now read the consuming project's constraint and format at that version
 
