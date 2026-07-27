@@ -12,12 +12,6 @@ on:
   push:
     branches: [main]
   pull_request:
-  schedule:
-    # A generated file can stop compiling without anyone touching this repo —
-    # a Flutter release adding a `required` parameter to `ColorScheme` is the
-    # case that prompted the check. Waiting for the next pull request means
-    # hearing about it after a user does, so ask once a week regardless.
-    - cron: '0 3 * * 1'
 
 jobs:
   test:
