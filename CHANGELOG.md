@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Font declarations added to a pubspec that uses CRLF line endings now use them too, instead of leaving the file with two kinds
+
 - Fix `font_exclusive` cleanup turning `pubspec.yaml` into invalid YAML on a file with CRLF line endings — the ordinary state of a checkout on Windows. Family declarations were matched with a pattern that cannot see past the `\r`, so every family read as belonging to no family: the declarations were left in place while the `fonts:` key above them was deleted, leaving `flutter:` mapped to a list and everything after it misindented. It fired on runs that had nothing to clean up, reported success, and exited 0. Cleanup now writes each line back with the ending it came in with, so a run that removes nothing leaves the file byte-identical
 
 - Generated colors extensions now expose a `fromMap` factory, so a tool that parses tweakcn CSS at runtime can turn the parsed tokens into the extension instead of re-writing that mapping by hand — a copy that drifts silently, showing no error when the generator adds a token, only a color that stops updating. Building from a theme's own tokens reproduces that theme's generated constant, and a token the CSS does not define gets the same transparent placeholder the constants use. The signature stays in primitives (`Map<String, int>`), so the generated file still imports Flutter and nothing else

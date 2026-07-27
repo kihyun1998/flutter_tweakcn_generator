@@ -221,7 +221,13 @@ class PubspecFontAdder {
   }
 
   /// Inserts [fontsYaml] into the pubspec content at the right location.
-  static String _insertFontsSection(String content, String fontsYaml) {
+  ///
+  /// Everything inserted is rewritten to the endings [content] already uses,
+  /// so a pubspec checked out on Windows does not come back half CRLF.
+  static String _insertFontsSection(String content, String rawFontsYaml) {
+    final ending = content.contains('\r\n') ? '\r\n' : '\n';
+    final fontsYaml = rawFontsYaml.replaceAll('\n', ending);
+
     // Case 1: flutter section with fonts already exists → append
     final fontsPattern = RegExp(r'^(  fonts:\s*\n)', multiLine: true);
     final fontsMatch = fontsPattern.firstMatch(content);
@@ -238,13 +244,14 @@ class PubspecFontAdder {
     final flutterMatch = flutterPattern.firstMatch(content);
     if (flutterMatch != null) {
       final insertPos = flutterMatch.end;
-      return '${content.substring(0, insertPos)}  fonts:\n$fontsYaml${content.substring(insertPos)}';
+      return '${content.substring(0, insertPos)}  fonts:$ending'
+          '$fontsYaml${content.substring(insertPos)}';
     }
 
     // Case 3: no flutter section → add it at end
     if (!content.endsWith('\n')) {
-      content += '\n';
+      content += ending;
     }
-    return '$content\nflutter:\n  fonts:\n$fontsYaml';
+    return '$content${ending}flutter:$ending  fonts:$ending$fontsYaml';
   }
 }

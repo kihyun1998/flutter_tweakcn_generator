@@ -241,6 +241,26 @@ flutter:
       expect('family: Inter'.allMatches(readPubspec(path)).length, 1);
     });
 
+    test('inserts with the endings the pubspec already uses', () {
+      for (final source in [
+        'name: my_app\n\nflutter:\n  fonts:\n    - family: Roboto\n',
+        'name: my_app\n\nflutter:\n  uses-material-design: true\n',
+        'name: my_app\n',
+      ]) {
+        final path = createPubspec(source.replaceAll('\n', '\r\n'));
+
+        PubspecFontAdder.addFonts(path, testFonts);
+        final result = readPubspec(path);
+
+        expect(
+          result.replaceAll('\r\n', ''),
+          isNot(contains('\n')),
+          reason: 'left LF-only lines in a CRLF pubspec:\n$result',
+        );
+        expect(loadYaml(result), isA<YamlMap>());
+      }
+    });
+
     test('ignores a family key outside flutter > fonts', () {
       final path = createPubspec('''
 name: my_app
