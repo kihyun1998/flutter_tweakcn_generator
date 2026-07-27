@@ -16,6 +16,21 @@ class PubspecFontAdder {
   static String _unquote(String value) =>
       _quotedPattern.firstMatch(value)?.group(2) ?? value;
 
+  /// The content of a line split off a `\n`, without the `\r` a CRLF file
+  /// leaves on the end.
+  ///
+  /// The patterns below match this rather than the raw line. `\r` is a regex
+  /// line terminator, so `(.+)$` cannot reach past one — which is how a
+  /// family declaration in a CRLF pubspec came to match nothing.
+  static String _withoutCarriageReturn(String line) =>
+      line.endsWith('\r') ? line.substring(0, line.length - 1) : line;
+
+  static final _flutterKeyPattern = RegExp(r'^flutter:\s*$');
+  static final _topLevelKeyPattern = RegExp(r'^\S');
+  static final _fontsKeyPattern = RegExp(r'^  fonts:\s*$');
+  static final _flutterSubKeyPattern = RegExp(r'^  \S');
+  static final _familyPattern = RegExp(r'^    - family:\s*(.+)$');
+
   /// Adds font declarations for [fonts] to the pubspec.yaml at [pubspecPath].
   ///
   /// Groups fonts by family and writes proper `flutter > fonts` YAML.
@@ -83,6 +98,9 @@ class PubspecFontAdder {
     final file = File(pubspecPath);
     if (!file.existsSync()) return;
 
+    // What goes back out is the line as it came in, endings and all, so a run
+    // with nothing to remove leaves the file byte-identical. Only what the
+    // patterns see is stripped — see [_withoutCarriageReturn].
     final lines = file.readAsStringSync().split('\n');
     final result = <String>[];
 
@@ -100,16 +118,17 @@ class PubspecFontAdder {
 
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i];
+      final text = _withoutCarriageReturn(line);
 
       // Detect top-level flutter: section
-      if (RegExp(r'^flutter:\s*$').hasMatch(line)) {
+      if (_flutterKeyPattern.hasMatch(text)) {
         inFlutter = true;
         result.add(line);
         continue;
       }
 
       // Detect leaving flutter section (another top-level key)
-      if (inFlutter && RegExp(r'^\S').hasMatch(line) && line.isNotEmpty) {
+      if (inFlutter && _topLevelKeyPattern.hasMatch(text)) {
         // Flush any pending block before leaving
         if (inFonts && currentBlock.isNotEmpty) {
           if (isDefined(currentFamily)) {
@@ -129,7 +148,7 @@ class PubspecFontAdder {
       }
 
       // Detect `  fonts:` inside flutter
-      if (RegExp(r'^  fonts:\s*$').hasMatch(line)) {
+      if (_fontsKeyPattern.hasMatch(text)) {
         inFonts = true;
         fontsLineIndex = result.length;
         result.add(line);
@@ -142,9 +161,9 @@ class PubspecFontAdder {
       }
 
       // Detect end of fonts section (another flutter sub-key at indent 2)
-      if (RegExp(r'^  \S').hasMatch(line) &&
-          !line.trimLeft().startsWith('-') &&
-          !line.trimLeft().startsWith('fonts:')) {
+      if (_flutterSubKeyPattern.hasMatch(text) &&
+          !text.trimLeft().startsWith('-') &&
+          !text.trimLeft().startsWith('fonts:')) {
         // Flush pending block
         if (currentBlock.isNotEmpty) {
           if (isDefined(currentFamily)) {
@@ -163,7 +182,7 @@ class PubspecFontAdder {
       // because its indentation also delimits the block being rewritten, but
       // the name it yields must mean the same thing as the one
       // [PubspecFontDeclarations] reads.
-      final familyMatch = RegExp(r'^    - family:\s*(.+)$').firstMatch(line);
+      final familyMatch = _familyPattern.firstMatch(text);
       if (familyMatch != null) {
         // Flush previous block
         if (currentBlock.isNotEmpty) {

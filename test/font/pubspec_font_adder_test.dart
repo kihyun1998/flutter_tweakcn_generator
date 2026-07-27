@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_tweakcn_generator/src/font/font_downloader.dart';
 import 'package:flutter_tweakcn_generator/src/font/pubspec_font_adder.dart';
 import 'package:test/test.dart';
+import 'package:yaml/yaml.dart';
 
 void main() {
   late Directory tempDir;
@@ -369,6 +370,21 @@ version: 1.0.0
   });
 
   group('PubspecFontAdder.removeUndefinedFonts', () {
+    /// A pubspec that declares one family and one key after it — the shape
+    /// every corruption of this file has taken, since what breaks is the
+    /// boundary between a family block and whatever follows it.
+    const robotoOnlyPubspec = '''
+name: my_app
+
+flutter:
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: fonts/Roboto-Regular.ttf
+          weight: 400
+  uses-material-design: true
+''';
+
     test('removes undefined font families', () {
       final path = createPubspec('''
 name: my_app
@@ -438,6 +454,77 @@ flutter:
       expect(result, isNot(contains('fonts:')));
       expect(result, isNot(contains('Roboto')));
       expect(result, contains('uses-material-design: true'));
+    });
+
+    test('leaves a pubspec that needs no cleanup byte-identical', () {
+      // The ordinary case: you declared your fonts, and you are still using
+      // them. Regenerating has nothing to do here and must prove it by not
+      // touching the file — pubspec.yaml is hand-edited and usually the only
+      // copy.
+      final path = createPubspec(robotoOnlyPubspec);
+
+      PubspecFontAdder.removeUndefinedFonts(path, ['Roboto']);
+
+      expect(readPubspec(path), robotoOnlyPubspec);
+    });
+
+    test('leaves a CRLF pubspec that needs no cleanup byte-identical', () {
+      // Every other case here is written as a Dart string literal, so the
+      // whole group only ever sees LF. A pubspec checked out on Windows has
+      // CRLF, and the family lines are matched by pattern.
+      final crlf = robotoOnlyPubspec.replaceAll('\n', '\r\n');
+      final path = createPubspec(crlf);
+
+      PubspecFontAdder.removeUndefinedFonts(path, ['Roboto']);
+
+      expect(readPubspec(path), crlf);
+    });
+
+    test('removes an undefined family from a CRLF pubspec', () {
+      final path = createPubspec(
+        '''
+name: my_app
+
+flutter:
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: fonts/Inter-Regular.ttf
+          weight: 400
+    - family: Roboto
+      fonts:
+        - asset: fonts/Roboto-Regular.ttf
+          weight: 400
+  uses-material-design: true
+'''.replaceAll('\n', '\r\n'),
+      );
+
+      PubspecFontAdder.removeUndefinedFonts(path, ['Inter']);
+      final result = readPubspec(path);
+
+      expect(result, isNot(contains('Roboto')));
+
+      final flutter = (loadYaml(result) as YamlMap)['flutter'] as YamlMap;
+      expect((flutter['fonts'] as YamlList).single['family'], 'Inter');
+      expect(flutter['uses-material-design'], isTrue);
+    });
+
+    test('leaves valid YAML when it removes the last family', () {
+      for (final ending in ['\n', '\r\n']) {
+        final path = createPubspec(robotoOnlyPubspec.replaceAll('\n', ending));
+
+        PubspecFontAdder.removeUndefinedFonts(path, ['Inter']);
+        final result = readPubspec(path);
+
+        final parsed = loadYaml(result) as YamlMap;
+        expect(
+          parsed['flutter'],
+          isA<YamlMap>(),
+          reason: 'flutter must still be a mapping, not a list, with $ending',
+        );
+        expect((parsed['flutter'] as YamlMap)['fonts'], isNull);
+        expect((parsed['flutter'] as YamlMap)['uses-material-design'], isTrue);
+      }
     });
 
     test('preserves other flutter keys', () {
