@@ -26,9 +26,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
-      - run: dart pub get
+      # `--no-example` because `pub get` otherwise resolves `example/` too, and
+      # the example is a Flutter app. Without it this job cannot even install
+      # its own dependencies — which is the point of running it without
+      # Flutter, and is invisible on a developer machine that has Flutter.
+      - run: dart pub get --no-example
       - run: dart analyze --fatal-infos
-      - run: dart format --output=none --set-exit-if-changed .
+      # Scoped to this package's own code for the same reason the analyzer
+      # excludes the example: the formatter reads page width out of analysis
+      # options, and the example's cannot be read without a Flutter SDK, which
+      # silently changes how its files are formatted.
+      - run: dart format --output=none --set-exit-if-changed lib test tool bin
       - run: dart test
 
   generated-output:

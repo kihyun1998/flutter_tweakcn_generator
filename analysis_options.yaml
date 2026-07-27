@@ -13,15 +13,21 @@
 
 include: package:lints/recommended.yaml
 
+analyzer:
+  exclude:
+    # The example is a separate Flutter package with its own analysis options.
+    # Analyzing it from here makes this package's result depend on the example
+    # having been resolved with a Flutter SDK, which a consumer of this dev
+    # dependency has no reason to have installed. The generated code that the
+    # example exists to prove out is compiled by
+    # `tool/verify_generated_output.dart` instead.
+    - example/**
+
 # Uncomment the following section to specify additional rules.
 
 # linter:
 #   rules:
 #     - camel_case_types
-
-# analyzer:
-#   exclude:
-#     - path/to/excluded/files/**
 
 # For more information about the core and recommended set of lints, see
 # https://dart.dev/go/core-lints
