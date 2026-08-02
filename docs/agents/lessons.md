@@ -31,8 +31,10 @@ passes its unit tests and corrupts a real round-trip.
 | **`Stream.pipe` subscribes to the source only once the sink is ready.** | `File.openWrite()` does not open the file; the open starts in the consumer and `addStream` calls `stream.listen` only inside `.then(...)`. When the open fails, **nothing ever subscribes** — a full response body sits there with no reader, which is the same stranded connection a non-200 used to leave, reached from the *success* branch. Reading the response and feeding the sink by hand separates "did we read the response" from "could we write the file"; only the first holds a socket (#23) |
 | **`HttpClient.connectionTimeout` bounds establishing the socket and nothing else.** | It never bounds a header read or a body read (`http_impl.dart:2704-2707`). Those need their own deadlines, and neither implies the other |
 | **The downloader silently goes through the environment's proxy.** | `HttpClient()` defaults `_findProxy` to `HttpClient.findProxyFromEnvironment` (`http_impl.dart:2790`), so `http_proxy` / `https_proxy` / `no_proxy` are honoured though nothing in this package mentions them. A proxy's 407 arrives as an ordinary undrained non-200 |
-| **A file can be declared twice under different family spellings.** |
 | **A file can be declared twice under different family spellings.** | Keyed last-wins, an undefined declaration overruled a defined one and the file was deleted. A file is kept if **any** of its declarations names a defined family (#6) |
+| **A seam placed *above* the code you are trying to prove makes that code unreachable.** | It looks like any injection point buys testability. It buys only what sits *below* it: injecting the lookup function (`Future<String> Function(url)`) replaces `_fetchCss`, so every line of the HTTP handling it contains goes dark, and a test written through that seam passes with the defect present. Measured on the same mutation: through an endpoint parameter the leak test goes **red**; through an injected lookup it stays **green** (#27). Put the seam at the outermost edge — the *address* — and everything inside stays real |
+| **`HttpOverrides` intercepts the bare `HttpClient()` constructor, and a nested empty scope recurses.** | `HttpClient()` is a factory that consults `HttpOverrides.current` (`http.dart:1348-1354`), so any bare construction is already interceptable zone-locally — the reason "there is no seam" is rarely literally true. But `_HttpOverridesScope` chains to its `_previous` (`_http/overrides.dart:92-107`), so building the delegate inside a nested empty `runZoned` calls straight back into your own override and dies of stack overflow. `Zone.root.run(...)` is the escape: the root zone carries no override token |
+| **`Uri.replace(queryParameters:)` would destroy the Google Fonts weight list.** | The query `family=Inter:wght@100;200;…` is made of `:`, `@` and `;`, all of which `queryParameters` percent-encodes. Only the family name may be escaped, and only with `Uri.encodeComponent`. The URL is therefore assembled as text on purpose — and now has a test asserting what the server actually received, rather than what the builder meant to send (#27) |
 
 ## War stories
 
@@ -110,6 +112,52 @@ depending on Flutter.
   tokens, and **only running them says whether they do**.
 
 This is why `CLAUDE.md` names three commands and not one.
+
+### #27 — the seam has to sit below the thing you are proving
+
+The lookup half of `FontDownloader` was bound to a hardcoded
+`https://fonts.googleapis.com/css2`, so no test reached a line of it. Two
+defects hid there: #23's connection leak, whose fix was applied to both halves
+but testable on only one, and a `200` carrying no `@font-face`, which nobody had
+ever reproduced.
+
+The issue framed the decision as *how much public surface to spend*, and listed
+four options. **Its stated premise — that the path cannot be measured at all —
+was false**, and so was its ranking of the options. Both were settled by
+measurement rather than reading.
+
+**First, "unmeasurable" was wrong.** `HttpClient()` is a factory that consults
+`HttpOverrides.current`, so the lookup was already interceptable zone-locally
+with no production change whatsoever. A throwaway probe reproduced all three
+states in one run.
+
+**Then the interesting part.** That discovery pointed at the *cheapest* option,
+not the right one, and the difference only showed up under mutation. Delete
+`await _release(response)` from `_fetchCss` — the #23 fix, lookup half only —
+and run the same defect through two candidate seams:
+
+| Seam the test goes through | Under the mutation |
+|---|---|
+| an endpoint parameter (real `_fetchCss`, loopback server) | **red** — `Expected: <0>, Actual: <1>` |
+| an injected lookup function (`Future<String> Function(url)`) | **green** — passes with the defect present |
+
+The injected function *replaces* `_fetchCss`, so everything inside it goes dark;
+the test proves the caller's error handling and nothing about the leak. An
+endpoint parameter replaces only the **address**, so URL building, the HTTP
+exchange, the status check, the drain and the deadline all stay on the tested
+path. That is the rule now in the table above, and it is why the option the
+issue dismissed first turned out to be the only one that works.
+
+`HttpOverrides` reaches the same set — it substitutes below everything too — but
+it does so by reaching around the module rather than through its contract, and
+the test then silently depends on the lookup using a bare `HttpClient()`. The
+endpoint parameter says the same thing in the module's own signature, and is
+defensible surface on its own terms: it is the address of the font service, not
+a test hook.
+
+**Both new tests were confirmed by mutation, not by passing.** The second
+mutation — restoring the pre-#23 unbounded `transform(utf8.decoder).join()` —
+left the child VM hung until it was killed at 90 s, with no output at all.
 
 ### #22 — a missing seam, not a wrong fallback
 
