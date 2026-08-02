@@ -56,6 +56,26 @@ Reads `tweakcn.css` and generates `lib/theme/tweakcn_theme.g.dart` by default.
 
 If a Google Font is detected in `--font-sans`, the `google_fonts` package is automatically added to your `pubspec.yaml`.
 
+#### Exit codes
+
+**`0` means the theme is usable as generated.** That is the whole rule; the two
+non-zero values only say which side of it a run fell on.
+
+| Code | Meaning | Example |
+|---|---|---|
+| `0` | Everything the theme needs is in place | — |
+| `1` | Nothing was generated | no CSS file at the configured `input` |
+| `2` | The theme was written, but something it needs is not in place | a font could not be downloaded; `dart pub add google_fonts` failed |
+
+`2` is not "worse" than `1` — exit codes are categories, not a scale. It exists
+so a script driving this CLI can tell "no theme was produced" from "the theme is
+there and one font is missing" without parsing the output. A caller that only
+cares whether anything went wrong can keep checking for non-zero.
+
+These are the only three values. An unexpected failure — an unwritable path, a
+config value of the wrong type — is reported the same way: `1` if it happened
+before the theme file was written, `2` if after.
+
 ### 4. Usage
 
 ```dart
