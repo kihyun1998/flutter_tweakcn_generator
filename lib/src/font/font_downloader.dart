@@ -103,7 +103,8 @@ class FontDownloadReport {
       );
 }
 
-/// Downloads Google Font .ttf files via the Google Fonts CSS2 API.
+/// Downloads .ttf files via a Google Fonts CSS2 API, which is
+/// [defaultCssEndpoint] unless a caller names another one.
 class FontDownloader {
   FontDownloader._();
 
@@ -130,18 +131,29 @@ class FontDownloader {
   /// present. Files that could not be obtained are reported as failures and
   /// are left out of [FontDownloadReport.fonts], so nothing declares an asset
   /// that is not there.
+  ///
+  /// [cssEndpoint] is where the family is looked up, defaulting to
+  /// [defaultCssEndpoint]. Point it at a mirror to fetch from somewhere else —
+  /// the family and weights are appended to whatever query it already carries,
+  /// and the files it names are fetched from wherever the CSS says.
   static Future<FontDownloadReport> download(
     String fontName,
     String fontsDir, {
     String relativeDir = 'fonts',
+    Uri? cssEndpoint,
   }) async {
     final List<FontEntry> entries;
     try {
-      entries = parseFontEntries(await _fetchCss(_buildCssUrl(fontName)));
+      entries = parseFontEntries(
+        await _fetchCss(_buildCssUrl(fontName, cssEndpoint)),
+      );
     } catch (error) {
-      // A family Google Fonts does not serve, or an unreachable API, is a
-      // failed download like any other — not a reason to abandon the run
+      // A family the endpoint does not serve, or an unreachable endpoint, is
+      // a failed download like any other — not a reason to abandon the run
       // before the theme has been written or the other families tried.
+      //
+      // Whether it should still count as a *failure* once the theme is
+      // otherwise usable is #28's decision, not this line's. Left as is.
       final reason = '$error';
       stderr.writeln('  Error: could not look up "$fontName" — $reason');
       return FontDownloadReport.failure(fontName, reason);
@@ -163,7 +175,11 @@ class FontDownloader {
   /// Fetches each of [entries] into [fontsDir] for the family [fontName].
   ///
   /// Split out from [download] so the file-writing half can be exercised
-  /// against any server, without the Google Fonts CSS lookup in front of it.
+  /// against any server, without a CSS lookup in front of it. That used to be
+  /// the *only* half a test could reach, and the asymmetry hid two defects
+  /// (#27); the lookup is now reachable too, through [download]'s
+  /// `cssEndpoint`. This split survives it because entries obtained some other
+  /// way are still worth fetching — not because the other half is untestable.
   static Future<FontDownloadReport> downloadEntries(
     Iterable<FontEntry> entries,
     String fontName,
@@ -376,14 +392,24 @@ class FontDownloader {
   /// establishing the socket.
   static const _timeout = Duration(seconds: 30);
 
-  /// Builds a Google Fonts CSS2 API URL requesting all standard weights.
-  static String _buildCssUrl(String fontName) {
+  /// Where a family is looked up unless the caller names somewhere else.
+  static final defaultCssEndpoint = Uri.https('fonts.googleapis.com', '/css2');
+
+  /// Builds a CSS2 API URL asking [endpoint] for every standard weight.
+  ///
+  /// The query is appended as text rather than through [Uri.queryParameters],
+  /// which would percent-encode the `:`, `@` and `;` the weight list is made
+  /// of. Only the family name is escaped — it is the one part that can carry
+  /// a space or a character with its own meaning here.
+  static String _buildCssUrl(String fontName, Uri? endpoint) {
+    final base = endpoint ?? defaultCssEndpoint;
     final encoded = Uri.encodeComponent(fontName);
-    return 'https://fonts.googleapis.com/css2'
-        '?family=$encoded:wght@100;200;300;400;500;600;700;800;900';
+    final family = 'family=$encoded:wght@100;200;300;400;500;600;700;800;900';
+    final query = base.hasQuery ? '${base.query}&$family' : family;
+    return base.replace(query: query).toString();
   }
 
-  /// Fetches CSS from the Google Fonts API.
+  /// Fetches CSS from a Google Fonts CSS2 API.
   ///
   /// The default Dart User-Agent causes Google Fonts to return TTF format URLs.
   static Future<String> _fetchCss(String url) async {
@@ -393,8 +419,11 @@ class FontDownloader {
       final response = await _headers(request);
       if (response.statusCode != 200) {
         await _release(response);
+        // Names the host rather than "Google Fonts": the endpoint is the
+        // caller's to choose, and a mirror's failure must not be reported as
+        // Google's.
         throw StateError(
-          'Google Fonts API returned HTTP ${response.statusCode}',
+          '${Uri.parse(url).host} returned HTTP ${response.statusCode}',
         );
       }
       // Collected through [_consume] rather than `transform(...).join()` so
