@@ -19,6 +19,15 @@ See the Development section of `README.md`.
 
 ## Agent skills
 
+### Working discipline
+
+Any substantive change — a feature slice, a bug fix, a refactor touching the
+public surface — runs through `theflow`. Its project-specific bindings (reference
+routing, the mechanism/policy boundary, proof method per layer, the gate matrix,
+the paths that always get a completeness pass) live in `docs/agents/theflow.md`,
+with the evidence behind them in `docs/agents/lessons.md`. Read the bindings
+before applying the method.
+
 ### Issue tracker
 
 Issues live as GitHub issues in `kihyun1998/flutter_tweakcn_generator`, managed via the `gh` CLI. See `docs/agents/issue-tracker.md`.
