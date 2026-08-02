@@ -1,0 +1,24 @@
+# Test runner configuration.
+#
+# The default run includes everything. `dart test` is the gate CLAUDE.md and
+# README name, so it must not silently skip the tests that prove a fix — a gate
+# whose scope quietly narrowed reports green having inspected less than it
+# claims. The fast loop is the opt-in, not the default.
+
+tags:
+  # Tests that wait out a real deadline. `FontDownloader` gives any one step 30
+  # seconds, and the only honest way to prove it lets go of a stalled peer is to
+  # let that deadline expire — so these cost about 30 seconds each and cannot be
+  # made cheaper without making the timeout injectable, which would put a
+  # mutable static on this package's public surface for the tests' benefit.
+  #
+  # The runner's own default timeout is 30 seconds, which is exactly what these
+  # are waiting for, so they need their own.
+  slow:
+    timeout: 2x
+
+presets:
+  # `dart test -P fast` — everything except the deadline tests. For the local
+  # edit loop; never for a gate.
+  fast:
+    exclude_tags: slow

@@ -4,7 +4,7 @@ A Dart build_runner package that generates Flutter theme code from tweakcn theme
 
 ## Verifying a change to the generator
 
-`dart test` only checks the text the generator emits — the package has no Flutter dependency, so the suite cannot tell whether that text compiles. After changing what the generator writes, also run:
+`dart test` only checks the text the generator emits — the package has no Flutter dependency, so the suite cannot tell whether that text compiles. (`dart test -P fast` skips the `slow`-tagged tests, which wait out the font downloader's real 30-second deadline. That is for the edit loop; a gate runs the bare command.) After changing what the generator writes, also run:
 
 ```bash
 dart run tool/verify_generated_output.dart

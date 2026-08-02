@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -236,29 +237,37 @@ class FontDownloader {
     File file,
   ) async {
     final part = File('${file.path}.part');
+    IOSink? sink;
     try {
       final request = await client.getUrl(Uri.parse(url));
-      final response = await request.close().timeout(_timeout);
+      final response = await _headers(request);
       if (response.statusCode != 200) {
+        await _release(response);
         return 'HTTP ${response.statusCode}';
       }
 
-      final sink = part.openWrite();
-      try {
-        await response.pipe(sink).timeout(_timeout);
-      } finally {
-        // `pipe` closes the sink on success. When it fails, closing here
-        // rethrows the same error, which would displace the original before
-        // the catch below sees it — so that rethrow is discarded, not the
-        // failure itself.
-        await sink.close().catchError((_) {});
-      }
+      // Read the body first and hand it to the file, rather than piping the
+      // one into the other. `pipe` subscribes to the response only once the
+      // sink is ready, so a sink that fails to open leaves the response
+      // untouched — a whole body sitting there with nobody reading it, which
+      // is the same stranded connection a non-200 used to leave. Feeding the
+      // sink by hand separates "did we read the response" from "could we
+      // write the file", and only the first one holds a socket.
+      sink = part.openWrite();
+      await _consume(response, sink.add);
+      await sink.close();
+      sink = null;
 
       part.renameSync(file.path);
       return null;
     } catch (error) {
       return '$error';
     } finally {
+      // Only reached when the write failed; the happy path already closed it.
+      // The sink is never bound to a stream, so `close()` cannot throw the
+      // synchronous "StreamSink is bound to a stream" that would escape this
+      // `catchError` and displace the failure being reported.
+      if (sink != null) await sink.close().catchError((_) {});
       // Cleanup must not become the failure: on a read-only directory the
       // delete throws, and letting it out would abandon the whole run.
       try {
@@ -270,10 +279,101 @@ class FontDownloader {
     }
   }
 
-  /// How long any one request may take before it counts as failed.
+  /// Waits for [request]'s response headers, giving up after [_timeout].
   ///
-  /// Without this a server that accepts the connection and then stalls hangs
-  /// the whole generator indefinitely.
+  /// The give-up has to be [HttpClientRequest.abort], not a plain
+  /// `.timeout(...)`: at this point there is no response object to let go of,
+  /// and abandoning the wait leaves the request in flight on a live socket.
+  /// `abort` destroys the connection outright and errors the future we are
+  /// awaiting, so the caller sees the timeout and the process can still exit.
+  static Future<HttpClientResponse> _headers(HttpClientRequest request) {
+    final deadline = Timer(
+      _timeout,
+      () => request.abort(
+        TimeoutException('No response headers within', _timeout),
+      ),
+    );
+    return request.close().whenComplete(deadline.cancel);
+  }
+
+  /// Reads [response] to its end, handing every chunk to [onChunk], and lets
+  /// the connection go however it ends.
+  ///
+  /// **A response nobody reads to the end strands its connection.** The client
+  /// returns a connection to its pool only once the response completes, and
+  /// `HttpClient.close()` without `force` releases only pooled ones — so the
+  /// socket outlives the run, keeps a handle on the event loop, and the process
+  /// finishes all its work and then never exits.
+  ///
+  /// **A deadline has to cancel, not merely stop waiting.** `Future.timeout`
+  /// completes a *derived* future and leaves the original subscription running,
+  /// which releases nothing: a peer that stalls instead of failing still holds
+  /// the socket, so the hang comes back with a delay in front of it. Cancelling
+  /// the subscription is the release — it closes the incoming message as
+  /// *closing*, which destroys the connection rather than pooling it.
+  ///
+  /// `close(force: true)` would also let go, but [downloadEntries] shares one
+  /// client across every file in a family; forcing it would destroy the
+  /// transfers still running on it.
+  static Future<void> _consume(
+    Stream<List<int>> response,
+    void Function(List<int> chunk) onChunk,
+  ) {
+    final completed = Completer<void>();
+    StreamSubscription<List<int>>? subscription;
+    Timer? deadline;
+
+    void finish([Object? error, StackTrace? stackTrace]) {
+      if (completed.isCompleted) return;
+      deadline?.cancel();
+      subscription?.cancel();
+      if (error == null) {
+        completed.complete();
+      } else {
+        completed.completeError(error, stackTrace ?? StackTrace.current);
+      }
+    }
+
+    subscription = response.listen(
+      (chunk) {
+        try {
+          onChunk(chunk);
+        } catch (error, stackTrace) {
+          // The write failed, but the socket is ours to release either way.
+          finish(error, stackTrace);
+        }
+      },
+      onError:
+          (Object error, StackTrace stackTrace) => finish(error, stackTrace),
+      onDone: finish,
+      cancelOnError: true,
+    );
+
+    // Only if the stream did not already finish inside `listen` — an unguarded
+    // timer would itself hold the event loop open for [_timeout].
+    if (!completed.isCompleted) {
+      deadline = Timer(
+        _timeout,
+        () => finish(TimeoutException('No response body within', _timeout)),
+      );
+    }
+    return completed.future;
+  }
+
+  /// Lets go of a response whose body will not be used.
+  ///
+  /// Reading it is the only way to release the connection (see [_consume]), and
+  /// it is cleanup rather than a result: a body that stalls or fails on the way
+  /// out must not displace the status the caller is about to report.
+  static Future<void> _release(HttpClientResponse response) =>
+      _consume(response, (_) {}).catchError((_) {});
+
+  /// How long any one step may take before it counts as failed.
+  ///
+  /// Applied separately to waiting for headers and to reading a body, because
+  /// a server can stall at either point and neither bound implies the other.
+  /// [HttpClient.connectionTimeout] does not cover either — it bounds only
+  /// establishing the socket.
   static const _timeout = Duration(seconds: 30);
 
   /// Builds a Google Fonts CSS2 API URL requesting all standard weights.
@@ -290,13 +390,20 @@ class FontDownloader {
     final client = HttpClient()..connectionTimeout = _timeout;
     try {
       final request = await client.getUrl(Uri.parse(url));
-      final response = await request.close().timeout(_timeout);
+      final response = await _headers(request);
       if (response.statusCode != 200) {
+        await _release(response);
         throw StateError(
           'Google Fonts API returned HTTP ${response.statusCode}',
         );
       }
-      return await response.transform(utf8.decoder).join();
+      // Collected through [_consume] rather than `transform(...).join()` so
+      // that this read is bounded too. A 200 whose body then stalls used to
+      // hang here with nothing to stop it — worse than the non-200 case, which
+      // at least finished its work first.
+      final body = <int>[];
+      await _consume(response, body.addAll);
+      return utf8.decode(body);
     } finally {
       client.close();
     }

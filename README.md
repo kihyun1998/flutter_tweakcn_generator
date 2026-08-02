@@ -376,8 +376,14 @@ No additional configuration needed. Network access is allowed by default.
 ## Development
 
 ```bash
-dart test    # the generator's own test suite
+dart test           # the generator's own test suite
+dart test -P fast   # the same, minus the tests that wait out a real deadline
 ```
+
+`-P fast` is for the edit loop, never for a gate. The tests it skips are tagged
+`slow` because they let the downloader's 30-second timeout actually expire —
+which is the only honest way to show it lets go of a peer that stalls rather
+than fails, and it costs about a minute and a half.
 
 The suite checks the *text* the generator emits. It cannot check that the text
 compiles, because this package generates Flutter source without depending on

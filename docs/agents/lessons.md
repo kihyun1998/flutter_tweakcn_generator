@@ -25,6 +25,13 @@ passes its unit tests and corrupts a real round-trip.
 | **`dart_style` → `analyzer` → `meta` → the Flutter SDK's pin is one chain.** | Raising the `dart_style` floor to `^<newest>` drags in an analyzer wanting a newer `meta` than Flutter pins, making this package unresolvable in **every** Flutter project. A Flutter project resolves the floor; this package resolves the top (`pubspec.yaml:21-30`) |
 | **A family name can be quoted or unquoted, and every reader must agree on which.** | `addFonts` recognised a quoted declaration and skipped; cleanup did not recognise it and deleted the block — leaving the family undeclared. Two correct-looking halves, one broken pair (#5) |
 | **tweakcn stores shadows as *components* and derives the levels.** | `types/theme.ts` holds `shadow-color`/`opacity`/`blur`/`spread`/`offset-x`/`offset-y`; `utils/theme-style-generator.ts:62-69` derives `--shadow-2xs` … `--shadow-2xl` from them. This package parses the *derived* values, so a question about shadow semantics is answered upstream of the CSS it reads |
+| **An HTTP response nobody reads to the end keeps its connection alive, and the process with it.** | A connection returns to the pool only once its response completes (`http_impl.dart:2373`), and `close()` without `force` releases only pooled ones (`_ConnectionTarget.close`, `http_impl.dart:2628`). The dimension that hides it is the **body**: a bodiless non-200 completes on its own, which is why two existing tests covering a 404 and a 500 could never have failed (#23) |
+| **`Future.timeout` abandons work; it does not cancel it.** | It completes a *derived* future and leaves the source future and its subscription untouched (`future_impl.dart`). Every `.timeout()` sitting on a stream subscription is therefore a leak site whenever the peer **stalls** rather than fails — the wait ends, the socket does not. Cancelling the subscription is the release: the parser's `onCancel` closes the incoming message as *closing* (`http_parser.dart:1221-1225`), which destroys the connection instead of pooling it. Before any response exists, the equivalent is `HttpClientRequest.abort()` (`http_impl.dart:1702`) (#23) |
+| **A stream that *stalls* is not a stream that *errors*.** | An errored stream tears its connection down on its own; a stalled one does not. Testing the errored case and generalising to "mid-stream failure" is how three of the four leaks in #23 stayed hidden — the suite's `/truncated` route errors, and it was the one case that never leaked |
+| **`Stream.pipe` subscribes to the source only once the sink is ready.** | `File.openWrite()` does not open the file; the open starts in the consumer and `addStream` calls `stream.listen` only inside `.then(...)`. When the open fails, **nothing ever subscribes** — a full response body sits there with no reader, which is the same stranded connection a non-200 used to leave, reached from the *success* branch. Reading the response and feeding the sink by hand separates "did we read the response" from "could we write the file"; only the first holds a socket (#23) |
+| **`HttpClient.connectionTimeout` bounds establishing the socket and nothing else.** | It never bounds a header read or a body read (`http_impl.dart:2704-2707`). Those need their own deadlines, and neither implies the other |
+| **The downloader silently goes through the environment's proxy.** | `HttpClient()` defaults `_findProxy` to `HttpClient.findProxyFromEnvironment` (`http_impl.dart:2790`), so `http_proxy` / `https_proxy` / `no_proxy` are honoured though nothing in this package mentions them. A proxy's 407 arrives as an ordinary undrained non-200 |
+| **A file can be declared twice under different family spellings.** |
 | **A file can be declared twice under different family spellings.** | Keyed last-wins, an undefined declaration overruled a defined one and the file was deleted. A file is kept if **any** of its declarations names a defined family (#6) |
 
 ## War stories
@@ -119,11 +126,50 @@ the code on either side of it.
 
 ### #23 — reading the code is not observing what it does
 
-With `font_mode: local`, a non-200 from the Google Fonts API leaves the CLI alive
-after all its output is done. `_fetchCss` throws without consuming the response, so
-the socket stays open and the VM never exits; `client.close()` without `force`
-closes only idle connections.
+A non-200 from the Google Fonts API left the CLI alive after all its output was
+done. Both `_fetchCss` and `_fetchTo` discarded the response without consuming it,
+so the connection stayed *active*, and `client.close()` without `force` destroys
+only idle ones. Measured: `download()` returned in **232 ms**, and the process was
+still alive at **45 s**, when a watchdog killed it. Fixed by draining the body
+before reporting the status.
 
-It matters because `Segoe UI`, `Arial` and `SF Pro Display` **all return 400**, and
-those sit at the front of the font stack tweakcn commonly emits. Found by observing
-an actual HTTP 400, not by reading the code.
+It was easy to reach — `Segoe UI`, `Arial` and `SF Pro Display` all answer 400, and
+those sit at the front of the font stack tweakcn commonly emits.
+
+**The part worth keeping is why the suite could not have caught it.** The download
+tests already covered a 404 (`/missing`) and a 500 (`/server-error`), and both are
+**bodiless**. A non-200 with no body completes on its own, so its connection goes
+back to the pool whether or not anyone drains it. Measured, with the client's own
+`close()` and no drain:
+
+| Response | Connection left behind |
+|---|---|
+| 404, no body | none |
+| 404, 16-byte body | 1 |
+| 400, 6805-byte body (the real API's) | 1 |
+
+A test written against the existing routes would have passed with and without the
+fix — a green nobody had ever seen fail. The route added for this fix answers with
+a body for exactly that reason.
+
+**The general form**, worth checking whenever a test server stands in for a real
+one: *the fixture is a claim about the real service, and a fixture simpler than
+the real response can be simpler in the dimension the bug lives in.*
+
+**And the enumeration was wrong on its axis, which is the more useful lesson.**
+The first pass enumerated *which status code came back* and concluded it had
+converged: two leak sites, both fixed, every other branch consumes its body. A
+Step 5 lens found three more, all reproduced. They were invisible because the
+right axis was **which local step failed to consume what arrived**:
+
+| Missed state | Measured before the fix |
+|---|---|
+| 200 OK, the local sink fails to open, so nothing subscribes | returned in 33 ms, process alive at 40 s |
+| the fix's *own* deadline expiring on a stalled body | returned at 30 s with the right status, alive at 60 s |
+| the write deadline expiring on a stalled body | returned at 30 s, alive at 60 s |
+
+The middle row is the one to remember: **the first fix made one path slower
+rather than fixed**, and its test passed, because the test's peer failed instead
+of stalling. All three collapse into one rule (`Future.timeout` abandons, it does
+not cancel) and one fix — which is what "a divergence is not a direction" buys:
+the lens read the SDK *and* this repo, so it returned the shape, not a list.

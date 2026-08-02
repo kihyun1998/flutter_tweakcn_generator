@@ -1,3 +1,11 @@
+## Unreleased
+
+- Fix the CLI not exiting when a font lookup or download goes wrong. Everything was printed, the theme and pubspec were already written correctly, and the process then sat there until it was killed. A connection returns to the client's pool only once its response completes, and closing the client releases only pooled ones — so any response that was never read to the end kept its socket, and the socket kept a handle on the event loop. Four ways in, all of them reachable: a non-200 whose body was discarded unread; a 200 whose local file could not be opened, where the body arrived in full and nothing ever subscribed to it; a peer that sent headers and then stalled, where the 30-second deadline abandoned the wait without letting go of anything; and the same stall before any headers arrived. The non-200 case is the easy one to hit — `Segoe UI`, `Arial` and `SF Pro Display` all answer 400 and all sit at the front of the font stack tweakcn commonly emits. Reading a response to its end is now what releases it, every read is bounded, and a deadline **cancels** rather than merely stopping the wait, because `Future.timeout` completes a derived future and leaves the original subscription running — which released nothing and turned a hang into a delayed hang. Waiting for headers gives up with `HttpClientRequest.abort`, which is the only release available before there is a response to let go of
+
+- The CSS lookup's response body is now read under the same 30-second deadline as everything else. It had none, so a server that returned 200 and then stalled hung the generator outright rather than failing — the case the deadline's own documentation claimed it prevented
+
+- A download that fails while writing now reports the write's error instead of `Bad state: StreamSink is bound to a stream`. The body is read and handed to the file rather than piped into it, so the sink is never bound to a stream, and `IOSink.close()` — which throws that error *synchronously*, outrunning the `catchError` meant to absorb it — no longer has the case to throw on
+
 ## 0.4.0
 
 Generated themes can now be built at runtime, not only baked in at generation
