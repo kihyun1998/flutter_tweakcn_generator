@@ -10,8 +10,87 @@ import 'package:flutter_tweakcn_generator/src/generator/dart_theme_generator.dar
 import 'package:flutter_tweakcn_generator/src/generator/language_version.dart';
 import 'package:flutter_tweakcn_generator/src/parser/css_parser.dart';
 import 'package:path/path.dart' as p;
+import 'package:yaml/yaml.dart';
+
+/// The run wrote nothing: there is no theme to use.
+///
+/// See [_exitPartial] for the rule that separates the two failure values.
+const _exitNothingGenerated = 1;
+
+/// The theme was written, but something it needs is not in place.
+///
+/// **`0` means the theme is usable as generated.** That is the whole rule; the
+/// two non-zero values only say which side of it a run fell on. A caller that
+/// reads nothing but the exit code can then tell "no theme was produced" from
+/// "the theme is there and one font is missing" — a distinction the single `1`
+/// this CLI used to return could not carry, and one that costs real work
+/// downstream: a builder driving this CLI as a pipeline step had moved the
+/// step to the end of its pipeline, because a single font failure looked
+/// exactly like total failure and skipped everything after it.
+///
+/// The value is `2` rather than something from `sysexits` (64–78, mirrored by
+/// `package:io`'s `ExitCode`) because none of those categories means "partial
+/// success", and this CLI already answers `1`. Nothing standard is at stake:
+/// the shell reserves `126`, `127` and `128+N`, and `1`–`63` are unassigned.
+///
+/// Note that `2` is *not* "worse than [_exitNothingGenerated]" — exit codes
+/// are categories, not a scale. Keeping the hard failure on `1` is deliberate:
+/// a caller already branching on `1` keeps catching the case it cared about.
+const _exitPartial = 2;
+
+/// Set once the theme file is on disk, so a failure after that point can be
+/// reported as partial rather than total.
+var _themeWritten = false;
+
+/// Whether [pubspecContent] already declares `google_fonts` as a dependency.
+///
+/// Parsed rather than searched for as text. A substring test over the whole
+/// file answered yes to a *commented-out* `# google_fonts:` line — and to one
+/// under any other key — which suppressed the add entirely and left the run
+/// reporting success while the generated theme imported a package the project
+/// did not declare. That is the exact defect the exit codes above exist to
+/// report, arriving through the one door that skipped them.
+///
+/// `dependency_overrides` and `dev_dependencies` count: `dart pub add` refuses
+/// a package already named in any of them, so trying anyway would turn a
+/// resolvable project into a reported failure.
+bool _declaresGoogleFonts(String pubspecContent) {
+  final doc = loadYaml(pubspecContent);
+  if (doc is! YamlMap) return false;
+  for (final section in const [
+    'dependencies',
+    'dev_dependencies',
+    'dependency_overrides',
+  ]) {
+    final deps = doc[section];
+    if (deps is YamlMap && deps.containsKey('google_fonts')) return true;
+  }
+  return false;
+}
 
 Future<void> main(List<String> args) async {
+  try {
+    await _run();
+  } catch (error, stackTrace) {
+    // Whatever reaches here is unplanned, and most of it is not exotic: a
+    // config value of the wrong YAML type (`font_exclusive: yes` is a
+    // *string*), an output path that cannot be created, a pubspec this
+    // process may not rewrite, no `dart` on PATH. Left uncaught, every one of
+    // them exits 255 — a fourth value the two constants above, the README and
+    // the changelog all say does not exist. Worse, they land on *both* sides
+    // of the line those values draw: some throw before the theme is written
+    // and some after, so the one distinction this CLI promises to make would
+    // be the one thing it stopped making.
+    //
+    // The stack trace goes out too. These are unexpected by construction, so
+    // the trace is the useful half of the report.
+    stderr.writeln('Error: $error');
+    stderr.writeln(stackTrace);
+    exit(_themeWritten ? _exitPartial : _exitNothingGenerated);
+  }
+}
+
+Future<void> _run() async {
   final projectDir = Directory.current.path;
 
   // Read config
@@ -27,7 +106,7 @@ Future<void> main(List<String> args) async {
     stderr.writeln('');
     stderr.writeln('flutter_tweakcn_generator:');
     stderr.writeln('  input: your-theme.css');
-    exit(1);
+    exit(_exitNothingGenerated);
   }
 
   final css = cssFile.readAsStringSync();
@@ -51,7 +130,7 @@ Future<void> main(List<String> args) async {
     // Only a generator bug reaches here, but it should still arrive looking
     // like every other failure this CLI reports rather than as a stack trace.
     stderr.writeln('Error: ${e.message}');
-    exit(1);
+    exit(_exitNothingGenerated);
   }
 
   // ColorScheme requires these, so a fallback was generated rather than an
@@ -70,6 +149,7 @@ Future<void> main(List<String> args) async {
   final outputFile = File(p.join(projectDir, config.output));
   outputFile.parent.createSync(recursive: true);
   outputFile.writeAsStringSync(dartCode);
+  _themeWritten = true;
 
   // Font handling based on fontMode
   final googleFonts = DartThemeGenerator.extractGoogleFontNames(
@@ -148,7 +228,7 @@ Future<void> main(List<String> args) async {
       for (final failure in report.failures) {
         stderr.writeln('  $failure');
       }
-      exitCode = 1;
+      exitCode = _exitPartial;
     }
 
     if (report.fonts.isNotEmpty) {
@@ -160,7 +240,7 @@ Future<void> main(List<String> args) async {
     // Google Fonts mode: auto-add dependency
     final pubspecFile = File(p.join(projectDir, 'pubspec.yaml'));
     final pubspecContent = pubspecFile.readAsStringSync();
-    if (!pubspecContent.contains('google_fonts:')) {
+    if (!_declaresGoogleFonts(pubspecContent)) {
       stdout.writeln('Adding google_fonts dependency...');
       final result = Process.runSync('dart', [
         'pub',
@@ -170,9 +250,18 @@ Future<void> main(List<String> args) async {
       if (result.exitCode == 0) {
         stdout.writeln('  Added google_fonts to pubspec.yaml');
       } else {
+        // The generated theme imports package:google_fonts. Without the
+        // dependency the project does not resolve at all, so reporting this
+        // on stderr alone let a caller reading the exit code call it a
+        // success and move on to a build that could not work.
         stderr.writeln(
           '  Failed to add google_fonts. Run manually: dart pub add google_fonts',
         );
+        stderr.writeln(
+          '  Until then ${config.output} imports a package this project does '
+          'not declare.',
+        );
+        exitCode = _exitPartial;
       }
     }
   }

@@ -18,12 +18,22 @@ void main() {
   });
 
   void writeProject(String css) {
+    // `google_fonts` is declared so the CLI does not try to add it. These
+    // tests are about the ColorScheme warning, and one of the fixtures below
+    // names a Google font — which sends the run through `dart pub add`, a step
+    // that cannot succeed here at all: `google_fonts` depends on `flutter`,
+    // and the job that runs this suite deliberately has only a plain Dart SDK.
+    // That failure used to be silent, so this file passed without anyone
+    // noticing it was exercising the font path; it is an exit code now.
     File('${projectDir.path}/pubspec.yaml').writeAsStringSync('''
 name: demo_app
 version: 1.0.0
 
 environment:
   sdk: ^3.0.0
+
+dependencies:
+  google_fonts: ^8.0.0
 
 flutter_tweakcn_generator:
   input: theme.css
