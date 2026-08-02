@@ -320,6 +320,12 @@ cd example && flutter test
 - The analyzer excludes `example/**` for the same reason.
 - `dart test` never builds `example/`. Any rename or public-path change needs the
   second job to catch it.
+- **`dart test -P fast` is not a gate.** It excludes the `slow` tag — tests that
+  wait out the downloader's real 30-second deadline, which is the only honest
+  way to show it releases a stalled peer. Use it in the edit loop; a gate runs
+  the bare command. `dart_test.yaml` deliberately makes the *full* run the
+  default for this reason: a gate whose scope quietly narrowed reports green
+  having inspected less than it claims.
 - Run each gate **bare, never piped** — `test … | tail -1 && commit` always
   commits, because a pipeline's exit status is `tail`'s.
 - **Never move a threshold to green a build.** Raise it when the real number
@@ -386,7 +392,8 @@ in `lessons.md` once it exists.
 | A green compile is not a green run | **#19** — the generated entry points had to be *run* in an app to prove the runtime factories rebuild a theme's own constants |
 | The boundary leaks downward | **#21** — formatting at the consumer's language version; and `pubspec.yaml:21-30`, where the `dart_style` top is capped so Flutter projects can still resolve this package |
 | Contract ≠ defect / missing export | **#22** — a consumer hand-copies `ColorSchemeResolver` because it is not exported. The fallback is not wrong; the seam is missing |
-| Probe the real runtime fact | **#23** — a non-200 from the Google Fonts API leaves the response undrained, so the CLI never exits. Found by observing an actual HTTP 400, not by reading the code |
+| Probe the real runtime fact | **#23** — the CLI hung after a non-200 because the response was never read. Reading the code said the shape was wrong; only running it gave the numbers that made it a defect (`download()` returned in 232 ms, the process was still alive at 45 s), and only probing the real API showed *why* the suite missed it — its 400 carries ~6.8 kB of body, while the 404 and 500 the tests already covered carry none, and a bodiless non-200 strands nothing |
+| Step 5 is not optional once enumeration risk is real | **#23** again, and the sharpest case in the repo. The first pass enumerated *status codes*, declared convergence, and shipped a fix with a hole in it: on a stalled peer the fix turned an unbounded hang into a 30-second one, and its test passed because the test's peer failed instead of stalling. The lens — one subagent, briefed on the Dart SDK *and* this repo at once — returned three more reproduced states and the rule that collapses them into one fix. A lens given only this repo could have seen the difference but not the direction |
 | Divergence seeds get deleted, not documented | **#13 / #14 / #15** — three runtime factories, each removing a hand-copy from a downstream builder |
 | Hidden state in an area takes several passes | **#4 / #5 / #6** — font family ownership: substring matching, then file-name inference, then finally settling it from the pubspec |
 | Read the *whole* input, not the first match | **#9** (merge every `:root` and `.dark` block), **#10** (fall back to dark's `--font-sans`) |

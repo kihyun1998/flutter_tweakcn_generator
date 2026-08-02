@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_tweakcn_generator/src/font/font_downloader.dart';
@@ -28,9 +29,34 @@ void main() {
           case '/missing':
             response.statusCode = HttpStatus.notFound;
             await response.close();
+          case '/missing-with-body':
+            // A non-200 that carries a body, which is what the real Google
+            // Fonts API sends: an unsupported family answers 400 with ~6.8 kB
+            // of HTML. The bodiless cases above cannot stand in for it — a
+            // response with no body completes on its own, so the connection
+            // returns to the pool whether or not the client drains it, and a
+            // test written against them passes with and without the fix.
+            response.statusCode = HttpStatus.badRequest;
+            response.write('x' * 6805);
+            await response.close();
           case '/server-error':
             response.statusCode = HttpStatus.internalServerError;
             await response.close();
+          // The three stalls. Each promises a body and then never finishes it,
+          // or never answers at all — a peer that goes quiet rather than
+          // failing. An errored stream tears its own connection down; a
+          // stalled one does not, which is why `/truncated` below never
+          // reproduced any of this.
+          case '/stall-headers':
+            // Accept and say nothing. Nothing to release but the request.
+            break;
+          case '/stall-body-200':
+            response.contentLength = 100000;
+            response.add(List.filled(100, 7));
+          case '/stall-body-400':
+            response.statusCode = HttpStatus.badRequest;
+            response.contentLength = 100000;
+            response.add(List.filled(100, 7));
           case '/truncated':
             // Promise a kilobyte, deliver 16 bytes, then hang up. The client
             // sees the body end early.
@@ -56,6 +82,23 @@ void main() {
       FontEntry(weight: weight, url: '$base$path');
 
   File fileFor(String name) => File('${fontsDir.path}/$name');
+
+  /// Waits for the server to stop seeing any connection, up to [within].
+  ///
+  /// Returns the last count observed, so a failure reports the number rather
+  /// than only that it timed out. Polling rather than a fixed delay keeps the
+  /// passing case fast; only a genuine leak waits out the deadline.
+  Future<int> connectionsAfterSettling({
+    Duration within = const Duration(seconds: 2),
+  }) async {
+    final deadline = DateTime.now().add(within);
+    var total = server.connectionsInfo().total;
+    while (total > 0 && DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      total = server.connectionsInfo().total;
+    }
+    return total;
+  }
 
   test('reports a downloaded file and writes it', () async {
     final report = await FontDownloader.downloadEntries(
@@ -121,7 +164,119 @@ void main() {
       isFalse,
       reason: 'the part file must be cleaned up too',
     );
+    expect(
+      await connectionsAfterSettling(),
+      0,
+      reason: 'a body that ends early must not strand its connection either',
+    );
   });
+
+  test(
+    'releases the connection when the response is a non-200 with a body',
+    () async {
+      final report = await FontDownloader.downloadEntries(
+        [entry(400, '/missing-with-body')],
+        'Inter',
+        fontsDir.path,
+      );
+
+      // Side conditions: the failure is still reported and nothing is written,
+      // so a green here cannot come from the request having been skipped.
+      expect(report.failures, hasLength(1));
+      expect(report.failures.single.reason, contains('400'));
+      expect(report.downloaded, 0);
+      expect(report.fonts, isEmpty);
+      expect(fileFor('Inter-Regular.ttf').existsSync(), isFalse);
+
+      expect(
+        await connectionsAfterSettling(),
+        0,
+        reason:
+            'downloadEntries closes its client, but an unread response body '
+            'leaves that connection active, and HttpClient.close() without '
+            'force only destroys idle ones — so the socket outlives the run '
+            'and holds the process open',
+      );
+    },
+  );
+
+  // A peer that stalls instead of failing is the case a deadline exists for,
+  // and the one where `Future.timeout` is not enough: it completes a derived
+  // future and leaves the original subscription running, so the wait ends and
+  // the socket does not.
+  //
+  // This one runs in a child VM, because the claim *is* about a process. The
+  // in-process check the other tests use — has the server stopped seeing the
+  // connection — cannot stand in for it here: a stalling server never closes
+  // its own response, so it keeps counting the connection no matter what the
+  // client did, and asking it proves nothing. Whether the VM exits is the
+  // observable, and only another process can watch that.
+  //
+  // All three stalls go through one child, so the cost is one deadline each
+  // rather than a process launch each, and the assertion is the real-world
+  // one: after meeting every way a peer can go quiet, the run still ends.
+  test(
+    'lets go of every kind of stalled peer, so the process can still exit',
+    () async {
+      final child = File('${fontsDir.path}/child.dart')..writeAsStringSync('''
+import 'dart:io';
+import 'package:flutter_tweakcn_generator/src/font/font_downloader.dart';
+
+Future<void> main() async {
+  for (final path in ['/stall-headers', '/stall-body-200', '/stall-body-400']) {
+    final report = await FontDownloader.downloadEntries(
+      [FontEntry(weight: 400, url: '$base\$path')],
+      'Inter',
+      Directory.systemTemp.createTempSync('stall_child_').path,
+    );
+    stdout.writeln('\$path -> \${report.failures.single.reason}');
+  }
+  stdout.writeln('CHILD DONE');
+}
+''');
+
+      final repoRoot = Directory.current.path;
+      final process = await Process.start('dart', [
+        'run',
+        '--packages=$repoRoot/.dart_tool/package_config.json',
+        child.path,
+      ]);
+      final output = process.stdout.transform(utf8.decoder).join();
+
+      var exited = true;
+      final code = await process.exitCode
+          .timeout(
+            // Three 30-second deadlines, plus room for the VM to start.
+            const Duration(seconds: 150),
+            onTimeout: () {
+              exited = false;
+              process.kill(ProcessSignal.sigkill);
+              return -1;
+            },
+          )
+          .whenComplete(() => process.exitCode);
+
+      final printed = await output;
+      expect(
+        exited,
+        isTrue,
+        reason:
+            'the child finished its work and then had to be killed: a socket '
+            'nobody let go of is still holding the event loop open\n$printed',
+      );
+      expect(code, 0);
+      // The deadline must not swallow what actually happened, and each stall
+      // has to be reported as the step that timed out — not as the one before.
+      expect(printed, contains('/stall-headers -> TimeoutException'));
+      expect(printed, contains('No response headers'));
+      expect(printed, contains('/stall-body-200 -> TimeoutException'));
+      expect(printed, contains('No response body'));
+      expect(printed, contains('/stall-body-400 -> HTTP 400'));
+      expect(printed, contains('CHILD DONE'));
+    },
+    tags: 'slow',
+    timeout: const Timeout(Duration(minutes: 4)),
+  );
 
   test('still reports a file that was already on disk', () async {
     fileFor('Inter-Regular.ttf').writeAsBytesSync([1, 2, 3]);
@@ -187,6 +342,14 @@ void main() {
       // Both entries were attempted; neither crashed the run.
       expect(report.failures, hasLength(2));
       expect(report.fonts, isEmpty);
+      expect(
+        await connectionsAfterSettling(),
+        0,
+        reason:
+            'these are 200s: the body arrived in full and the sink failed to '
+            'open, so nothing ever subscribed to the response. Releasing only '
+            'on the non-200 branch does not reach this',
+      );
     },
     testOn: '!windows',
   );
