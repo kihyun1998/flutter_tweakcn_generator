@@ -1,4 +1,27 @@
-## Unreleased
+## 0.5.0
+
+**The CLI's exit code now means something specific: `0` says the theme is
+usable as generated.** Before this release it said only that nothing had
+thrown. A missing CSS file and a single failed font both answered `1`, a
+`dart pub add google_fonts` that failed answered `0` while leaving a project
+that could not resolve, and anything unexpected answered `255`. There are now
+three values and only three — `0`, `1` for nothing generated, `2` for a theme
+that was written but is short something it needs.
+
+**If you drive this CLI from a script, read the exit-code section of the
+README before upgrading.** Checking for non-zero keeps working unchanged.
+Branching on `1` also keeps working — the hard failure stayed there
+deliberately. What is new is that two situations which used to report success
+now report `2`: `font_mode: custom` finding no `.ttf` for a family, and a font
+lookup that returns no font files. Both left the generated theme naming a
+family with nothing behind it, which Flutter falls back on silently at
+runtime. One situation moves the other way: a font lookup that fails when
+every file is already downloaded and declared now answers `0` instead of `2`,
+because nothing about that theme is missing.
+
+The font downloader also gained a `cssEndpoint` parameter — additive, and
+motivated less by configuration than by the fact that nothing could test the
+lookup while its URL was hardcoded.
 
 - **CHANGE**: the exit code now reflects whether the theme's fonts are actually there, rather than whether something went wrong on the way to putting them there. `0` was already documented to mean "the theme is usable as generated", and fonts broke that rule on **both** sides of one axis. A run whose fonts were entirely in place answered `2` because the CSS lookup failed — the shape a re-run with the network briefly down takes, where every file is already downloaded and declared and nothing about the theme is missing; measured, the same project answers `2` offline and `0` online with the theme, pubspec and disk identical. And a run whose theme named a family with nothing behind it answered `0`: `font_mode: custom` with no matching `.ttf`, or a lookup that returns CSS naming no font files, both wrote a theme with `fontFamily` set, declared nothing in `pubspec.yaml`, and reported success — Flutter then falls back to the default font at runtime with no error anywhere, which is precisely the silence an exit code exists to break. Both are now one check, asked at the end: in `local` and `custom` modes, a generated theme naming a family `pubspec.yaml` does not declare exits `2`. It is per family, so a stack whose first font is ready and whose second is not is reported rather than averaged away. A file that failed to *download* still exits `2` as before — that is a weight the theme asked for and did not get. Callers reading only "non-zero" are unaffected; a caller treating `2` as "fonts are fine, ignore" now hears about a case it previously could not
 
