@@ -42,6 +42,40 @@ const _exitPartial = 2;
 /// reported as partial rather than total.
 var _themeWritten = false;
 
+/// Which of [families] the generated theme names but the project cannot load.
+///
+/// Readiness is **what `pubspec.yaml` declares**, not what sits in the fonts
+/// directory: Flutter resolves a family through the asset manifest, so a file
+/// nothing declares is not a font, and a family nothing declares falls back to
+/// the default at runtime without an error anywhere. That silence is the whole
+/// reason the exit code has to say it.
+///
+/// Deliberately *not* checked: whether each declared asset is still on disk.
+/// A declaration pointing at a missing file fails the next Flutter build
+/// loudly, naming the file — so the exit code adds nothing there, while
+/// checking it would mean reconstructing asset paths that
+/// [PubspecFontDeclarations] does not keep (it holds file names, not
+/// directories) and would answer a false "missing" for any declaration
+/// pointing outside `font_dir`. **This holds as long as declarations keep
+/// coming from `PubspecFontAdder`, which declares only files it just wrote.**
+///
+/// Family names are matched exactly. Flutter's own manifest lookup is exact,
+/// so treating `inter` and `Inter` as the same family would report a font as
+/// ready that will not load.
+List<String> _familiesTheProjectCannotLoad(
+  List<String> families,
+  String projectDir,
+) {
+  final declared =
+      PubspecFontDeclarations.read(
+        p.join(projectDir, 'pubspec.yaml'),
+      ).families.toSet();
+  return [
+    for (final family in families)
+      if (!declared.contains(family)) family,
+  ];
+}
+
 /// Whether [pubspecContent] already declares `google_fonts` as a dependency.
 ///
 /// Parsed rather than searched for as text. A substring test over the whole
@@ -204,15 +238,22 @@ Future<void> _run() async {
     final fontsDir = p.join(projectDir, config.fontDir);
     final reports = <FontDownloadReport>[];
 
+    // Families whose *lookup* failed, as opposed to families that lost an
+    // individual file. `FontDownloadReport.failure` names the family as the
+    // target in the first case and a file name in the second.
+    final lookupFailed = <String>{};
+
     for (final fontName in googleFonts) {
       stdout.writeln('Downloading font: $fontName');
-      reports.add(
-        await FontDownloader.download(
-          fontName,
-          fontsDir,
-          relativeDir: config.fontDir,
-        ),
+      final fontReport = await FontDownloader.download(
+        fontName,
+        fontsDir,
+        relativeDir: config.fontDir,
       );
+      if (fontReport.failures.any((f) => f.target == fontName)) {
+        lookupFailed.add(fontName);
+      }
+      reports.add(fontReport);
     }
 
     final report = FontDownloadReport.merge(reports);
@@ -228,7 +269,16 @@ Future<void> _run() async {
       for (final failure in report.failures) {
         stderr.writeln('  $failure');
       }
-      exitCode = _exitPartial;
+      // A file that failed to download is a weight the theme asked for and did
+      // not get, so the run is partial — that is #24's rule unchanged. A
+      // failed *lookup* is not evidence of anything missing on its own: the
+      // files it would have named may already be on disk and declared from an
+      // earlier run, which is what a re-run on a dropped network looks like.
+      // Whether anything is actually missing is settled below, by asking what
+      // the project declares rather than what went wrong getting there (#28).
+      if (report.failures.any((f) => !lookupFailed.contains(f.target))) {
+        exitCode = _exitPartial;
+      }
     }
 
     if (report.fonts.isNotEmpty) {
@@ -310,6 +360,35 @@ Future<void> _run() async {
         allowEmpty: allowEmpty,
       );
       stdout.writeln('Font cleanup complete');
+    }
+  }
+
+  // Whether the theme can load the fonts it names is what decides the exit
+  // code — not whether anything went wrong on the way to putting them there.
+  //
+  // #24 set the rule (`0` means the theme is usable as generated) and #28
+  // found it broken on *both* sides of one axis: a run whose fonts were
+  // entirely in place answered `2` because a lookup failed, and a run whose
+  // theme named a family with nothing behind it answered `0`. One check fixes
+  // both, because both are the same question asked at the end instead of
+  // inferred from an incident in the middle.
+  //
+  // Runs last, after `font_exclusive` cleanup, since removing a declaration is
+  // itself a way for the theme to end up naming a font the project cannot
+  // load.
+  if ((config.fontMode == 'local' || config.fontMode == 'custom') &&
+      googleFonts.isNotEmpty) {
+    final missing = _familiesTheProjectCannotLoad(googleFonts, projectDir);
+    if (missing.isNotEmpty) {
+      stderr.writeln(
+        'Error: the generated theme names ${missing.length} font '
+        'family(ies) that pubspec.yaml does not declare, so Flutter falls '
+        'back to the default font at runtime:',
+      );
+      for (final family in missing) {
+        stderr.writeln('  $family');
+      }
+      exitCode = _exitPartial;
     }
   }
 

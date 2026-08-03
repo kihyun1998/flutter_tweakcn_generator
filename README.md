@@ -65,7 +65,20 @@ non-zero values only say which side of it a run fell on.
 |---|---|---|
 | `0` | Everything the theme needs is in place | — |
 | `1` | Nothing was generated | no CSS file at the configured `input` |
-| `2` | The theme was written, but something it needs is not in place | a font could not be downloaded; `dart pub add google_fonts` failed |
+| `2` | The theme was written, but something it needs is not in place | the theme names a font family `pubspec.yaml` does not declare; a font file could not be downloaded; `dart pub add google_fonts` failed |
+
+For fonts the question is asked **at the end, about the result** — not about
+what went wrong on the way there. In `local` and `custom` modes the run exits
+`2` when the generated theme names a family that `pubspec.yaml` does not
+declare, because Flutter then falls back to the default font at runtime with no
+error anywhere. Two consequences worth knowing:
+
+- A failed lookup on its own is **not** `2`. Re-running with the network down,
+  when every font is already downloaded and declared, exits `0` — the theme is
+  usable, which is the whole rule. The failure is still reported on stderr.
+- `font_mode: custom` with no matching `.ttf`, and a lookup that returns no
+  font files, now exit `2` rather than `0`. Both used to report success while
+  leaving the theme pointing at a font that would silently fall back.
 
 `2` is not "worse" than `1` — exit codes are categories, not a scale. It exists
 so a script driving this CLI can tell "no theme was produced" from "the theme is
