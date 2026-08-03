@@ -169,7 +169,12 @@ flutter:
       final result = runGeneratorIn(projectDir);
 
       // Inter is the theme's font; MyFont is not, so it goes.
-      expect(result.exitCode, 0);
+      //
+      // `2`, not `0`: nothing in this project provides Inter either, so the
+      // theme is left naming a family that will silently fall back. That is
+      // #28, and this assertion used to freeze it — the cleanup below is what
+      // this test is for.
+      expect(result.exitCode, 2);
       expect(fontExists(), isFalse);
       expect(readPubspec(), isNot(contains('family: MyFont')));
     });

@@ -42,7 +42,11 @@ flutter_tweakcn_generator:
     final result = runGeneratorIn(projectDir);
     final stderrText = result.stderr.toString();
 
-    expect(result.exitCode, 0);
+    // `2`, not `0`: this project provides no Inter, so the theme names a
+    // family nothing declares. That is #28's report, and this assertion used
+    // to freeze the behavior it was about — the exit code is incidental here,
+    // the warning below is what this test is for.
+    expect(result.exitCode, 2);
     expect(stderrText, contains('different --font-sans'));
     expect(stderrText, contains('Inter, sans-serif'));
     expect(stderrText, contains('Roboto, sans-serif'));

@@ -159,6 +159,43 @@ a test hook.
 mutation — restoring the pre-#23 unbounded `transform(utf8.decoder).join()` —
 left the child VM hung until it was killed at 90 s, with no output at all.
 
+### #28 — a status derived from incidents, not from the result
+
+#24 set one rule for the CLI's exit code: **`0` means the theme is usable as
+generated.** Fonts broke it on *both* sides of one axis, and both breaks had the
+same cause — the code inferred the status from **what happened during the run**
+instead of asking **what the run left behind**.
+
+- a lookup failure set `2` even when every file was already downloaded and
+  declared. Measured: identical project, identical theme and pubspec, `2`
+  offline and `0` online.
+- a theme naming a family nothing declared exited `0`. Both `font_mode: custom`
+  with no matching file and a `200` naming no font files reached it.
+
+One check replaced both: at the end, do any of the families the theme names go
+undeclared in `pubspec.yaml`? That also settled a case neither the issue nor its
+measurement had covered — a stack where one family is ready and one is not,
+which merging the download reports had averaged away.
+
+**The generalisable part.** Two bugs that look like opposite sign errors are
+often one *question asked in the wrong place*. `hasFailures` is a fact about the
+process; "is the theme short a font" is a fact about the product, and only the
+second one is what the contract promises. When a status is defined in terms of
+the result, ask it about the result.
+
+**Two pre-existing tests caught the change**, both asserting `exitCode, 0`
+incidentally while testing something else — and both projects named `Inter` and
+provided no `Inter`. They had frozen the reported behaviour as expected. That is
+the shape worth recognising: an assertion nobody thought of as a contract is
+still a contract, and when it breaks the first question is whether it was
+encoding the bug.
+
+**Measuring it needed a way to fail the lookup offline.** `HttpClient` honours
+`http_proxy`/`https_proxy` (see the hidden-state table), so pointing them at a
+dead port fails the lookup deterministically with no network — and gives the
+*transient* shape (a real family, an unreachable network) rather than the
+permanently-unserved family the issue had measured.
+
 ### #22 — a missing seam, not a wrong fallback
 
 A consumer building a live preview must render exactly what the generator emits.
