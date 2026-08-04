@@ -346,8 +346,42 @@ class DartThemeGenerator {
   /// and so are the two a small radius can drive past zero. `lg` and `xl` are
   /// left as they are: a radius that is itself negative is the theme's own
   /// doing, and quietly correcting it here would hide it.
+  ///
+  /// This is not an invention either — it is what the browser does with the
+  /// same CSS. `border-radius` accepts no negative length, and CSS Values 4
+  /// range-checking clamps a `calc()` result to the range its property allows,
+  /// so `calc(2px - 4px)` computes to `0`, not to a dropped declaration.
   static double _atLeastZero(double value) => value < 0 ? 0 : value;
 
+  /// Writes the radius extension: four steps derived from the `--radius` token.
+  ///
+  /// **The derivation is tweakcn's, and this reproduces it rather than
+  /// inventing one.** `utils/theme-style-generator.ts` writes the same four
+  /// steps into both of tweakcn's outputs — the Tailwind v4 `@theme inline`
+  /// block (`:174-177`) and the Tailwind v3 config (`:256-259`):
+  ///
+  /// ```css
+  /// --radius-sm: calc(var(--radius) - 4px);
+  /// --radius-md: calc(var(--radius) - 2px);
+  /// --radius-lg: var(--radius);
+  /// --radius-xl: calc(var(--radius) + 4px);
+  /// ```
+  ///
+  /// That block travels inside the globals.css a user copies out of tweakcn,
+  /// so it is what their own web app computes from the CSS they paste here.
+  ///
+  /// **shadcn/ui derives the same steps differently, and does not govern this
+  /// layer.** Its `apps/v4/app/globals.css` (`:50-53`) scales instead — `* 0.6`,
+  /// `* 0.8`, `* 1.4` — and carries three further steps tweakcn never emits.
+  /// The two formulas agree at exactly one input, `--radius: 10px`, which is
+  /// tweakcn's default (`config/theme.ts:53`, `0.625rem`), so every theme that
+  /// leaves the radius alone hides the difference. Scaling here would make the
+  /// generated theme disagree with the very CSS it was generated from, at every
+  /// radius but that one. The reference routing in `CLAUDE.md` settles which
+  /// wins: tweakcn owns the input, shadcn/ui is context.
+  ///
+  /// The whole of this is two line ranges in one upstream file — recheck them
+  /// the day tweakcn's emitter moves. Reported once already, as issue #31.
   void _writeRadiusExtension(StringBuffer buf) {
     final cls = '${classPrefix}Radius';
     final radius = data.light.radius ?? data.dark.radius ?? _defaultRadius;
@@ -432,6 +466,28 @@ class DartThemeGenerator {
     buf.writeln('  /// `lg` is the radius itself, `md` two less, `sm` four');
     buf.writeln('  /// less and `xl` four more, with `sm` and `md` held at');
     buf.writeln('  /// zero rather than going negative.');
+    buf.writeln('  ///');
+    buf.writeln(
+      '  /// Those offsets are tweakcn\'s own, not this generator\'s:',
+    );
+    buf.writeln('  /// the CSS it emits derives the steps as');
+    buf.writeln(
+      '  /// `calc(var(--radius) - 4px)`, `calc(var(--radius) - 2px)`,',
+    );
+    buf.writeln(
+      '  /// `var(--radius)` and `calc(var(--radius) + 4px)`. So these',
+    );
+    buf.writeln('  /// four values are what a browser computes from the same');
+    buf.writeln(
+      '  /// theme. Holding a step at zero matches it too — CSS clamps',
+    );
+    buf.writeln(
+      '  /// a negative `calc()` result to the range `border-radius`',
+    );
+    buf.writeln('  /// allows. Note that shadcn/ui derives these steps by');
+    buf.writeln(
+      '  /// scaling instead, and the two agree only at a 10px radius.',
+    );
     buf.writeln('  ///');
     buf.writeln('  /// Null means the theme declares no `--radius`, which');
     buf.writeln('  /// falls back to $_defaultRadius. [standard] is what this');

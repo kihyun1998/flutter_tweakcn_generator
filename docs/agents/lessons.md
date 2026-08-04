@@ -31,6 +31,7 @@ passes its unit tests and corrupts a real round-trip.
 | **`Stream.pipe` subscribes to the source only once the sink is ready.** | `File.openWrite()` does not open the file; the open starts in the consumer and `addStream` calls `stream.listen` only inside `.then(...)`. When the open fails, **nothing ever subscribes** — a full response body sits there with no reader, which is the same stranded connection a non-200 used to leave, reached from the *success* branch. Reading the response and feeding the sink by hand separates "did we read the response" from "could we write the file"; only the first holds a socket (#23) |
 | **`HttpClient.connectionTimeout` bounds establishing the socket and nothing else.** | It never bounds a header read or a body read (`http_impl.dart:2704-2707`). Those need their own deadlines, and neither implies the other |
 | **The downloader silently goes through the environment's proxy.** | `HttpClient()` defaults `_findProxy` to `HttpClient.findProxyFromEnvironment` (`http_impl.dart:2790`), so `http_proxy` / `https_proxy` / `no_proxy` are honoured though nothing in this package mentions them. A proxy's 407 arrives as an ordinary undrained non-200 |
+| **tweakcn and shadcn/ui derive the radius steps by different formulas, and they agree at exactly one input — tweakcn's default.** | The steps look like "the shadcn convention", so checking them against shadcn/ui v4 (`apps/v4/app/globals.css:50-53`, `* 0.6` / `* 0.8` / `* 1.4`) reads as finding a bug. tweakcn emits the *subtractive* form into both its outputs (`utils/theme-style-generator.ts:174-177` for Tailwind v4's `@theme inline`, `:256-259` for the v3 config), and that block travels inside the globals.css the user copies — so it is what their own app computes. Setting the two equal has one root, `r = 10`, for all three steps at once, and tweakcn's default radius is `0.625rem` (`config/theme.ts:53`) — exactly 10px. Every theme that leaves the radius alone hides the difference (#31) |
 | **A file can be declared twice under different family spellings.** | Keyed last-wins, an undefined declaration overruled a defined one and the file was deleted. A file is kept if **any** of its declarations names a defined family (#6) |
 | **A seam placed *above* the code you are trying to prove makes that code unreachable.** | It looks like any injection point buys testability. It buys only what sits *below* it: injecting the lookup function (`Future<String> Function(url)`) replaces `_fetchCss`, so every line of the HTTP handling it contains goes dark, and a test written through that seam passes with the defect present. Measured on the same mutation: through an endpoint parameter the leak test goes **red**; through an injected lookup it stays **green** (#27). Put the seam at the outermost edge — the *address* — and everything inside stays real |
 | **`HttpOverrides` intercepts the bare `HttpClient()` constructor, and a nested empty scope recurses.** | `HttpClient()` is a factory that consults `HttpOverrides.current` (`http.dart:1348-1354`), so any bare construction is already interceptable zone-locally — the reason "there is no seam" is rarely literally true. But `_HttpOverridesScope` chains to its `_previous` (`_http/overrides.dart:92-107`), so building the delegate inside a nested empty `runZoned` calls straight back into your own override and dies of stack overflow. `Zone.root.run(...)` is the escape: the root zone carries no override token |
@@ -208,6 +209,49 @@ Neither behaviour is wrong. `ColorSchemeResolver` is simply **not exported**, so
 the resolution rule lives somewhere a consumer cannot call, and they hand-copy it —
 the divergence seed #13–#15 existed to delete. The bug is in the boundary, not in
 the code on either side of it.
+
+### #31 — the only test of a value sat on the one input that could not discriminate
+
+Reported as a defect: the radius steps are derived by adding and subtracting,
+while shadcn/ui v4 derives them by scaling. The report was accurate about
+shadcn/ui and wrong about which upstream governs. tweakcn emits the subtractive
+form itself, in both its Tailwind v3 and v4 outputs, and the block travels inside
+the globals.css the user copies — so the generator was reproducing the CSS its
+input was made of, at *every* radius. Adopting the proposal would have inverted
+the defect: correct at 10px, wrong everywhere else.
+
+**The part worth keeping is why nothing here could have told either way.** The
+repo's one test of the actual numbers was `generates radius values from CSS
+(0.625rem = 10px)`, asserting `sm: 6.0, md: 8.0, lg: 10.0, xl: 14.0`. Measured
+under the proposed change, applied to the baked constant:
+
+| Test | Under `* 0.6 / * 0.8 / * 1.4` |
+|---|---|
+| `generates radius values from CSS (0.625rem = 10px)` | **green** — 10 × 0.6 = 6, × 0.8 = 8, × 1.4 = 14 |
+| `a radius smaller than its steps generates no negative one` (2px) | red |
+| `a zero radius still steps xl above it` (added here) | red |
+
+The value test was pinned to the **default** radius, which is the single input
+at which the two formulas agree — the equations `0.6r = r - 4`, `0.8r = r - 2`
+and `1.4r = r + 4` all have the same root, `r = 10`, and tweakcn's default is
+`0.625rem`. So the suite's only assertion about the numbers would have passed
+under either formula, and a reader comparing the code against an upstream had
+nothing in the repo to check their reading against.
+
+**The general form.** A test written at a system's *default* input is written at
+the value most likely to be a fixed point of whatever transformation is under
+test — defaults are chosen to look right, and agreement at a default is evidence
+of nothing. This is the #23 fixture lesson moved one level out: there the
+fixture was simpler than the real response in the dimension the bug lived in;
+here the *input* was the one point where the dimension collapses.
+
+**And the durable fix was not in the arithmetic.** Nothing was wrong with it.
+What was wrong is that the derivation cited no source anywhere a reader would
+look — not in the generator, not in the dartdoc that ships to pub.dev, not in
+the README. #14 had called it "the shadcn arithmetic" in passing and a test in
+`example/` was still named `derives the shadcn steps around the radius`, which
+is false under shadcn v4 and is exactly the sentence that sends the next reader
+to file this again.
 
 ### #23 — reading the code is not observing what it does
 

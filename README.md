@@ -224,6 +224,16 @@ and it falls back to the same base the constant was built from. A `ThemeData`
 carries one radius, so hand it light's and fall back to dark's, exactly as the
 generator does.
 
+Those offsets are **tweakcn's own**, copied rather than invented: the CSS
+tweakcn emits derives the steps as `calc(var(--radius) - 4px)`,
+`calc(var(--radius) - 2px)`, `var(--radius)` and `calc(var(--radius) + 4px)`,
+so these four values are what a browser computes from the same theme. Holding a
+step at zero matches that too — CSS clamps a negative `calc()` result to the
+range `border-radius` allows. Note that shadcn/ui derives the same steps by
+scaling (`* 0.6`, `* 0.8`, `* 1.4`) and the two formulas agree at exactly one
+radius, 10px, which happens to be tweakcn's default. This package follows
+tweakcn, because tweakcn is what produced the CSS you pasted.
+
 `fromShadowMap` takes the levels keyed by CSS variable name, each holding its
 layers in paint order. A level the CSS does not define comes out empty, as it
 does in the constants. Shadow layers are the one token that is not a plain

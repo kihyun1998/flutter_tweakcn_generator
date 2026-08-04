@@ -475,6 +475,16 @@ class TweakcnRadius extends ThemeExtension<TweakcnRadius> {
   /// less and `xl` four more, with `sm` and `md` held at
   /// zero rather than going negative.
   ///
+  /// Those offsets are tweakcn's own, not this generator's:
+  /// the CSS it emits derives the steps as
+  /// `calc(var(--radius) - 4px)`, `calc(var(--radius) - 2px)`,
+  /// `var(--radius)` and `calc(var(--radius) + 4px)`. So these
+  /// four values are what a browser computes from the same
+  /// theme. Holding a step at zero matches it too — CSS clamps
+  /// a negative `calc()` result to the range `border-radius`
+  /// allows. Note that shadcn/ui derives these steps by
+  /// scaling instead, and the two agree only at a 10px radius.
+  ///
   /// Null means the theme declares no `--radius`, which
   /// falls back to 8.0. [standard] is what this
   /// returns for 10.0, the radius this theme resolved to.
