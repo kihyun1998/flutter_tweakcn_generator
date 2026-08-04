@@ -228,8 +228,10 @@ Those offsets are **tweakcn's own**, copied rather than invented: the CSS
 tweakcn emits derives the steps as `calc(var(--radius) - 4px)`,
 `calc(var(--radius) - 2px)`, `var(--radius)` and `calc(var(--radius) + 4px)`,
 so these four values are what a browser computes from the same theme. Holding a
-step at zero matches that too — CSS clamps a negative `calc()` result to the
-range `border-radius` allows. Note that shadcn/ui derives the same steps by
+step at zero matches that too — CSS Values 4 §calc-range clamps a negative
+`calc()` result to the range its property allows rather than invalidating the
+declaration, and its own example is this shape: `width: calc(5px - 10px)` is
+equivalent to `width: 0px`. Note that shadcn/ui derives the same steps by
 scaling (`* 0.6`, `* 0.8`, `* 1.4`) and the two formulas agree at exactly one
 radius, 10px, which happens to be tweakcn's default. This package follows
 tweakcn, because tweakcn is what produced the CSS you pasted.

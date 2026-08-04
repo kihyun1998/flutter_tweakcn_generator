@@ -238,6 +238,16 @@ and `1.4r = r + 4` all have the same root, `r = 10`, and tweakcn's default is
 under either formula, and a reader comparing the code against an upstream had
 nothing in the repo to check their reading against.
 
+**A rationale went into the repo before it was checked.** The clamp was
+justified in four surfaces — the generator, the emitted dartdoc, the README and
+the PR — as reproducing CSS range-checking, written from memory after visibly
+wavering over whether an out-of-range `calc()` clamps or invalidates the
+declaration. It clamps: CSS Values 4 §calc-range, whose own example is
+`width: calc(5px - 10px)` ≡ `width: 0px`. The claim was right, but the check ran
+*after* the commit, so being right was luck. This is the bindings' own rule
+turned on the author: the rationale you write into the repo is a verification
+target, because a wrong one gets believed and built on.
+
 **The general form.** A test written at a system's *default* input is written at
 the value most likely to be a fixed point of whatever transformation is under
 test — defaults are chosen to look right, and agreement at a default is evidence

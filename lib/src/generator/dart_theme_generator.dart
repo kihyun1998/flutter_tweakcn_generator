@@ -348,9 +348,18 @@ class DartThemeGenerator {
   /// doing, and quietly correcting it here would hide it.
   ///
   /// This is not an invention either — it is what the browser does with the
-  /// same CSS. `border-radius` accepts no negative length, and CSS Values 4
-  /// range-checking clamps a `calc()` result to the range its property allows,
-  /// so `calc(2px - 4px)` computes to `0`, not to a dropped declaration.
+  /// same CSS. CSS Values 4 §calc-range: a value resulting from a top-level
+  /// calculation "must be clamped to the range allowed in the target context",
+  /// and explicitly does *not* invalidate the declaration. The spec's own
+  /// worked example is this exact shape — `width: calc(5px - 10px)` is
+  /// equivalent to `width: 0px` — and `border-radius` allows no negative
+  /// length, so `calc(2px - 4px)` computes to `0` there too.
+  ///
+  /// The same section is why `lg` and `xl` are left alone rather than clamped
+  /// for symmetry: out-of-range values *outside* a `calc()` are syntactically
+  /// invalid and drop the whole declaration, so a negative `--radius` does not
+  /// have one browser behaviour to reproduce. tweakcn cannot emit one anyway —
+  /// its radius control is bounded at `min={0}`.
   static double _atLeastZero(double value) => value < 0 ? 0 : value;
 
   /// Writes the radius extension: four steps derived from the `--radius` token.
