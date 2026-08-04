@@ -1,3 +1,36 @@
+## 0.5.1
+
+**Documentation only — no generated value changes.** The generated file does
+gain ten lines, all of them `///`, so regenerating after this upgrade produces
+a diff in your committed theme. Every number in it is identical.
+
+- **DOCS**: the radius steps now say where they come from. `TweakcnRadius`
+  derives `sm`/`md`/`lg`/`xl` from `--radius` by subtracting 4, subtracting 2,
+  and adding 4 — arithmetic that reads as arbitrary on sight, and was reported
+  as a bug against shadcn/ui, which derives the same four steps by scaling
+  (`* 0.6`, `* 0.8`, `* 1.4`). Both formulas are real, and they agree at exactly
+  one input: a 10px radius, which is tweakcn's default `0.625rem`. So every
+  theme that leaves the radius alone hides the difference, and every theme that
+  changes it makes the two visibly disagree — which is why reading the code
+  against the wrong upstream looks like finding a defect. The offsets here are
+  **tweakcn's own**. It emits them itself, into both of its outputs — the
+  Tailwind v4 `@theme inline` block and the Tailwind v3 config — and that block
+  travels inside the globals.css you copy out of tweakcn, so these four values
+  are what your own web app computes from the same theme. Scaling them here
+  would make the generated theme disagree with the CSS it was generated from at
+  every radius but one. The generated `fromRadius` dartdoc, the README, and the
+  generator itself now all say so, so checking the derivation against an
+  upstream no longer requires guessing which upstream is the right one. Holding
+  a step at zero is upstream too, and was equally unexplained: CSS Values 4
+  §calc-range clamps a negative `calc()` result to the range its property allows
+  rather than dropping the declaration, and the spec's own worked example is
+  this exact shape — `width: calc(5px - 10px)` is equivalent to `width: 0px`
+
+- **DOCS**: 0.4.0's entry for the `fromRadius` factory called this derivation
+  "the shadcn arithmetic". It is tweakcn's, and shadcn/ui's differs from it.
+  That entry stays as published — this line corrects it rather than rewriting
+  what the registry already snapshotted
+
 ## 0.5.0
 
 **The CLI's exit code now means something specific: `0` says the theme is
