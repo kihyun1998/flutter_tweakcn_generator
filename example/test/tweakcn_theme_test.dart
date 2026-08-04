@@ -137,10 +137,23 @@ void main() {
       );
     });
 
-    test('derives the shadcn steps around the radius', () {
+    test('derives tweakcn\'s steps around the radius', () {
+      // 10px is the one radius at which tweakcn's offsets and shadcn/ui's
+      // scaling agree, so this case cannot tell them apart — see the zero
+      // radius below, which can.
       expect(
         TweakcnRadius.fromRadius(10),
         const TweakcnRadius(sm: 6, md: 8, lg: 10, xl: 14),
+      );
+    });
+
+    test('steps xl above a zero radius', () {
+      // tweakcn emits `--radius-xl: calc(var(--radius) + 4px)`, so a theme
+      // asking for square corners still rounds xl by 4 in the browser. This
+      // reproduces that rather than flattening it.
+      expect(
+        TweakcnRadius.fromRadius(0),
+        const TweakcnRadius(sm: 0, md: 0, lg: 0, xl: 4),
       );
     });
 

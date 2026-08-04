@@ -299,6 +299,35 @@ const _lightColorScheme = ColorScheme(
       expect(code, _declaresRadius(sm: 0, md: 0, lg: 2, xl: 6));
     });
 
+    test('a zero radius still steps xl above it', () {
+      // The one case where the two upstreams visibly disagree, and the reason
+      // this is pinned rather than left implied: tweakcn emits
+      // `--radius-xl: calc(var(--radius) + 4px)`, so a theme whose radius is
+      // zero still rounds xl by 4 in the browser. shadcn/ui v4's own
+      // globals.css derives xl multiplicatively and would give 0 here.
+      // tweakcn owns the input, so 4 is the faithful value.
+      final code =
+          DartThemeGenerator(
+            CssParser.parse(':root { --radius: 0rem; }'),
+          ).generate();
+      expect(code, _declaresRadius(sm: 0, md: 0, lg: 0, xl: 4));
+    });
+
+    test('the radius factory names where its derivation comes from', () {
+      // The arithmetic alone reads as arbitrary — it was reported as a defect
+      // against shadcn/ui v4, which derives the same steps by multiplying.
+      // This dartdoc ships as the pub.dev API reference, so it is where a
+      // reader checking the derivation against an upstream arrives first.
+      final factory = _sliceBetween(
+        generatedCode,
+        '  /// Builds the extension from a parsed radius',
+        '  factory TweakcnRadius.fromRadius',
+      );
+
+      expect(factory, contains('tweakcn'));
+      expect(factory, contains('calc(var(--radius) - 4px)'));
+    });
+
     test('the radius factory follows the class prefix', () {
       final code =
           DartThemeGenerator(
