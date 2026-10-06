@@ -6,7 +6,7 @@ package's *bindings* — which reference to read, where the boundary falls, how 
 prove behavior, which surfaces to sweep, which gates to run. The method defers
 every concrete value here.
 
-Identity and invariants live in [`CLAUDE.md`](../../CLAUDE.md). `CONTEXT.md` and
+Identity and invariants live in [`CLAUDE.md`](../../CLAUDE.md). `GLOSSARY.md` and
 `docs/adr/` **do not exist yet** — [`domain.md`](domain.md) says they are created
 lazily, when a term or a decision actually needs resolving. Per-incident evidence
 belongs in `lessons.md` (not yet created either; see the war-story index below).
@@ -99,7 +99,7 @@ implementation in tweakcn's or the browser's own layer. Read both.
 
 ## Step 1 — the project's own map
 
-**This project keeps none.** No `CONTEXT.md`, no `docs/adr/`, no dependency or
+**This project keeps none.** No `GLOSSARY.md`, no `docs/adr/`, no dependency or
 territory graph. Recorded here as an answer, not a blank: there is nothing to
 read at the start of Step 1 beyond `CLAUDE.md`, this file, and the issue's own
 cluster. When the first record lands (Step 6), add it here.
@@ -267,7 +267,7 @@ there is a wrong colour, and it compiles — a different class of cost.
 **Decision records.** Destination: **`docs/adr/`** at the repo root, per
 [`domain.md`](domain.md), numbered `NNNN-kebab-title.md`, created lazily. A
 promotion (two or more triggers) lands there and the glossary lands in
-`CONTEXT.md`.
+`GLOSSARY.md`.
 
 **Areas that already carry a record: none.** Zero accepted, zero proposed — the
 directory does not exist. So the filing step's check is currently trivial: no
