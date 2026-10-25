@@ -4,18 +4,23 @@ A Dart build_runner package that generates Flutter theme code from tweakcn theme
 
 ## Verifying a change to the generator
 
-`dart test` only checks the text the generator emits — the package has no Flutter dependency, so the suite cannot tell whether that text compiles. (`dart test -P fast` skips the `slow`-tagged tests, which wait out the font downloader's real 30-second deadline. That is for the edit loop; a gate runs the bare command.) After changing what the generator writes, also run:
+`dart test` compares the generator's output as text. The package has no Flutter
+dependency, so the suite cannot tell whether that text compiles. A gate runs the
+bare `dart test`; `-P fast` is for the edit loop (`dart_test.yaml`). After
+changing what the generator writes, also run:
 
 ```bash
+cd example && dart pub get && cd ..
 dart run tool/verify_generated_output.dart
 cd example && flutter test
 ```
 
-The first compiles the generated output for six theme shapes against the real SDK inside `example/`, which must have its packages resolved (`flutter pub get`). It also fails when the theme committed under `example/` is no longer what the generator writes — regenerate it with `cd example && dart run flutter_tweakcn_generator`, since the example is committed exactly as generated.
-
-The second runs the generated code. It is also the only thing that type-checks the seam between the package and its output: `ThemeModeData.shadowLayers` produces the record type the generated `fromShadowMap` takes, and nothing else in the repo puts those two declarations in the same compilation. Adding a field to one and not the other fails only here.
-
-See the Development section of `README.md`.
+The verifier compiles generated themes inside `example/` and fails when the
+committed example theme is stale. `flutter test` is the only command that runs
+the generated code, and the only one that type-checks the package↔output seam
+([shadow-layer-record](docs/map/shadow-layer-record.md)). When the verifier
+reports a stale example, or you need setup details, read `README.md` →
+"Development".
 
 ## Boundary
 
@@ -28,24 +33,18 @@ the result. Nothing here may know what an app looks like.
 - Consumer: which theme and when, `ThemeMode`, runtime `ThemeData` composition,
   widget styling, the CSS itself, and all of `pubspec.yaml` outside the fonts
   block this package writes.
-- Two seams. A build-time consumer meets only the generated file. A runtime
-  consumer (`CssParser.parse` on pasted CSS) meets the public API, so whatever
-  the generated code does that a live preview must reproduce has to be
-  reachable from it (#22).
-- A consumer's report: ask whose invariant broke first. A missing export is not
-  a wrong fallback.
+
+Before changing the exports or answering a consumer's report, read
+[`docs/map/public-api.md`](docs/map/public-api.md).
 
 ## Shipping
 
 - Does it change what a consumer gets? Yes → branch, PR (`Closes #N`), squash
   merge. No (`.github/`, docs, `test/` or `tool/` only, release commits) →
   straight to `main`.
-- Release: `chore: release X.Y.Z` bumps the version and adds the `CHANGELOG.md`
-  section; `dart pub publish --dry-run` is clean. A published CHANGELOG entry is
-  never rewritten. The maintainer runs `dart pub publish`; the agent never does.
-- After a release, check each consumer (siblings under `/Volumes/T7/GitHub`;
-  derive the list then). One may depend on this package as both a
-  `dev_dependency` and a `dependency`.
+- The maintainer runs `dart pub publish`. The agent prepares the release and
+  stops there. Before a release, read
+  [`docs/map/shipping.md`](docs/map/shipping.md).
 
 ## Comments
 

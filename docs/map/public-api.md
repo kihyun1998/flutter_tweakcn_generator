@@ -9,7 +9,7 @@ and feeds the tokens to the generated factories, so for them this package's
 public API is the seam.
 
 ## Governing decisions
-**None** as a record. `CLAUDE.md` → "Boundary" names the two seams.
+**None** as a record. This note owns the seam rules (maintainer, carried from `CLAUDE.md` → "Boundary", 2026-10-25).
 
 ## Design model
 - **Exported** (`lib/flutter_tweakcn_generator.dart`): `config`,
@@ -19,8 +19,7 @@ public API is the seam.
 - **Not exported:** `ColorSchemeResolver`, `CssLength`, `FontFamily`,
   `PubspecFontDeclarations`, `FontCleanup`, `CustomFontScanner`, the formatter
   and the language-version helpers.
-- **Anything a live preview must reproduce has to be reachable from here**
-  (`CLAUDE.md` → "Boundary"). The three extension factories meet this
+- **Anything a live preview must reproduce has to be reachable from here.** The three extension factories meet this
   ([constant-equals-factory](constant-equals-factory.md)); the `ColorScheme` half
   does not (#22).
 - **Runtime use moves the package from `dev_dependencies` to `dependencies`.**
@@ -29,7 +28,7 @@ public API is the seam.
 - **A consumer's report: first ask whose invariant broke.** For a missing token,
   a transparent color from `fromMap` is the contract. A consumer who wants
   `ColorScheme`'s fallback there has found a missing export, not a wrong fallback
-  (`CLAUDE.md` → "Boundary"; #22).
+  (#22).
 
 ## Code
 - `lib/flutter_tweakcn_generator.dart`: the export list

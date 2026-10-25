@@ -9,14 +9,14 @@ This territory covers how the package reaches consumers:
 - keeping dependencies current (#33).
 
 ## Governing decisions
-**None** as a record. `CLAUDE.md` → "Shipping" holds the maintainer's rules.
+**None** as a record. The release rules are the maintainer's (carried from `CLAUDE.md` → "Shipping", 2026-10-25). `CLAUDE.md` keeps the PR-or-`main` rule and the publish guardrail.
 
 ## Design model
 - **Release:** a dedicated commit `chore: release X.Y.Z` bumps `version` and adds
   the changelog section, and `dart pub publish --dry-run` must be clean. The
   maintainer runs `dart pub publish`; the agent never does. A published changelog
   entry is never rewritten. 0.5.1 corrects 0.4.0's "shadcn arithmetic" line
-  instead of editing it (`CLAUDE.md` → "Shipping", `CHANGELOG.md` 0.5.1).
+  instead of editing it (`CHANGELOG.md` 0.5.1).
 - **PR or straight to `main`:** the question is whether the change alters what a
   consumer gets (`CLAUDE.md` → "Shipping").
 - **Ranges are wide on purpose.** A Flutter project resolves the floor; this
@@ -26,8 +26,10 @@ This territory covers how the package reaches consumers:
   `example/test/` and `example/`'s platform folders.
 - **An emitted-text change is a consumer-visible diff,** even when it is dartdoc
   only (`CHANGELOG.md` 0.5.1).
-- **After a release, check each consumer.** A consumer may depend on the package
-  twice, as a `dev_dependency` and as a `dependency` (`CLAUDE.md` → "Shipping").
+- **After a release, check each consumer.** Consumers are sibling repos under
+  `/Volumes/T7/GitHub` on the maintainer's machine; derive the list at the
+  time, never store it. A consumer may depend on the package twice, as a
+  `dev_dependency` and as a `dependency`.
 
 ## Code
 - `pubspec.yaml`: `version`, `environment`, dependency ranges
