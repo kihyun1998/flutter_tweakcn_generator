@@ -40,4 +40,4 @@ Any change that adds, renames or removes a tweakcn token. Read the token list in
 tweakcn's `types/theme.ts` ([references](../agents/thegraph.md)) and edit both
 lists in the same commit. `test/parser/css_parser_test.dart` and
 `test/generator/dart_theme_generator_test.dart` each check their own side, and no
-test compares the two lists with each other.
+test compares the two lists with each other. Tracked: #36

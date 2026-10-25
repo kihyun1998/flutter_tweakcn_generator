@@ -64,4 +64,4 @@ From `CLAUDE.md`, `.github/workflows/ci.yml`, `dart_test.yaml` and the verifier'
 - **A test pinned at the default input** cannot tell two formulas apart
   ([radius-steps](radius-steps.md), #31).
 - **No test checks the [token-roster](token-roster.md)** parser list against the
-  generator list.
+  generator list. Tracked: #36

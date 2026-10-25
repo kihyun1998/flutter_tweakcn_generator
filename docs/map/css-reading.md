@@ -56,5 +56,6 @@ From reading the source; no record states these rules.
 ## Known holes / open
 - `--spacing` is parsed into `ThemeModeData.spacing` and never emitted or used.
   The maintainer has not decided what it is for (maintainer, 2026-10-25).
+  Tracked: #37
 - Only the tokens in `_colorVariables` are read. Any other `--variable` tweakcn
   emits is dropped silently.

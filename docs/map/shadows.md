@@ -50,4 +50,4 @@ From reading the source.
 - **An `inset` layer becomes an outer shadow.** `_parseSingle` strips the
   keyword and keeps the layer, because `BoxShadow` has no inset form. The theme
   then draws an outer shadow where the CSS asked for an inner one, and nothing
-  warns.
+  warns. Tracked: #35

@@ -43,4 +43,4 @@ From the source (`CustomFontScanner.scan`).
 
 ## Known holes / open
 - A variable font file (`Roboto[wdth,wght].ttf`) has no weight suffix, so it is
-  declared at 400 only.
+  declared at 400 only. Tracked: #38

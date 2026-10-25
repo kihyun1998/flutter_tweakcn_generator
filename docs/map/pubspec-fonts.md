@@ -54,8 +54,10 @@ From the source (`PubspecFontAdder`, `PubspecFontDeclarations`).
 
 ## Known holes / open
 - **The adder and the remover read the same block two different ways** (YAML
-  versus line patterns). Indentation other than two and four spaces, or flow
-  style (`fonts: [...]`), is not handled by the remover.
+  versus line patterns). The patterns assume two-space indentation under
+  `flutter:`. On a four-space pubspec the insert writes invalid YAML, and the
+  remover never finds the block, so `font_exclusive` deletes files and leaves
+  their declarations behind (simulated, 2026-10-25). Tracked: #34
 - **Destructive, and silent when it goes wrong.** #16 rewrote a CRLF pubspec into
   invalid YAML on a run with nothing to clean, printed success and exited 0. The
   damage is on the consumer's disk before anyone reads a diff (lessons.md,
