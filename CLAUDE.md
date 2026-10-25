@@ -64,6 +64,14 @@ content the map does not yet hold — move it first (`decant`).
 Any substantive change runs through `thegraph`; its build is
 `docs/agents/thegraph.md`.
 
+### Territory map
+
+The map's hub is [`docs/map/README.md`](docs/map/README.md). Read it before
+designing a change: open the territories the change touches and follow their
+blast radius and invariants. After the change lands, update the notes it
+falsified. When a fix reveals a fact, ask whether it holds at every site that
+shares the same assumption. If yes, the fix lands with an invariant note.
+
 ### Issue tracker
 
 Issues live as GitHub issues in `kihyun1998/flutter_tweakcn_generator`, managed via the `gh` CLI. See `docs/agents/issue-tracker.md`.
