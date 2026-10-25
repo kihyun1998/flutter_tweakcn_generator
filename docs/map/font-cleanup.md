@@ -46,9 +46,5 @@ From the source (`FontCleanup.cleanFontsDirectory`, the `font_exclusive` branch 
 - [cli-run](cli-run.md): exit `2` can be caused by this step.
 
 ## Known holes / open
-- **The docs say "local mode only"; the code runs in both modes.** `README.md`
-  (the `font_exclusive` line under Configuration) and the
-  `TweakcnConfig.fontExclusive` dartdoc both say local only, but `_run` runs
-  cleanup for `local` *or* `custom`. Checked at 2980252.
 - Like [pubspec-fonts](pubspec-fonts.md), this deletes on the consumer's disk.
   Give any change here a full completeness pass, however small the diff.

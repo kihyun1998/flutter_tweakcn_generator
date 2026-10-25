@@ -130,11 +130,11 @@ flutter_tweakcn_generator:
   class_prefix: Tweakcn                     # class name prefix (default)
   font_mode: google_fonts                   # google_fonts (default) | local | custom
   font_dir: fonts                           # local font directory (default: fonts)
-  font_exclusive: false                     # auto-clean unused fonts (default: false, local mode only)
+  font_exclusive: false                     # auto-clean unused fonts (default: false, local and custom modes)
   font_exclusive_allow_empty: false         # clean up even when no --font-sans is declared (default: false)
 ```
 
-When `font_exclusive: true` is set with `font_mode: local`, fonts in the `fonts/` directory that are no longer referenced by `--font-sans` are automatically deleted, and their `flutter > fonts` declarations are removed from `pubspec.yaml`. Useful when switching fonts to keep the project clean.
+When `font_exclusive: true` is set with `font_mode: local` or `custom`, fonts in the `fonts/` directory that are no longer referenced by `--font-sans` are automatically deleted, and their `flutter > fonts` declarations are removed from `pubspec.yaml`. Useful when switching fonts to keep the project clean.
 
 Cleanup is skipped with a warning when no `--font-sans` is found in the `:root` block, since deleting every font file on the basis of a parsing miss is not recoverable in `custom` mode. Switching `--font-sans` to a pure system stack (`ui-sans-serif, system-ui, ...`) still cleans up as before — that is a declared intent, not a missing value.
 
@@ -163,6 +163,12 @@ Each `<name>.tweakcn.css` becomes a `<name>.tweakcn.dart` beside it, so
 `output` settings under `flutter_tweakcn_generator:` in `pubspec.yaml` are for
 the CLI and have no effect here — build_runner decides both from the input's
 own path.
+
+The builder only writes the theme. Font handling is the CLI's: it downloads or
+scans `.ttf` files, declares them in `pubspec.yaml`, and adds `google_fonts`.
+Under build_runner, declare the fonts yourself — in `local` or `custom` mode the
+theme names a `fontFamily` that falls back to the default font until
+`pubspec.yaml` declares it.
 
 Configure builder options in `build.yaml`:
 
@@ -435,7 +441,7 @@ compiles, because this package generates Flutter source without depending on
 Flutter. That takes a second command:
 
 ```bash
-cd example && flutter pub get && cd ..
+cd example && dart pub get && cd ..
 dart run tool/verify_generated_output.dart
 ```
 

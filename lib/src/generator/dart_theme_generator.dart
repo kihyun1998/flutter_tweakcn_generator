@@ -386,8 +386,8 @@ class DartThemeGenerator {
   /// tweakcn's default (`config/theme.ts:53`, `0.625rem`), so every theme that
   /// leaves the radius alone hides the difference. Scaling here would make the
   /// generated theme disagree with the very CSS it was generated from, at every
-  /// radius but that one. The reference routing in `CLAUDE.md` settles which
-  /// wins: tweakcn owns the input, shadcn/ui is context.
+  /// radius but that one. The references in `docs/agents/thegraph.md` settle
+  /// which wins: tweakcn is binding, shadcn/ui is an example.
   ///
   /// The whole of this is two line ranges in one upstream file — recheck them
   /// the day tweakcn's emitter moves. Reported once already, as issue #31.

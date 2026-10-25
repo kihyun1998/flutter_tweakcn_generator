@@ -41,6 +41,4 @@ From the source (`TweakcnBuilder`, `build.yaml`).
 - [shipping](shipping.md): the `build` dependency range (`>=2.0.0 <5.0.0`) is wide on purpose, so consumers on older `build` majors can still resolve the package (#33).
 
 ## Known holes / open
-- `README.md` does not say that font handling is CLI-only, so a builder user in
-  local or custom mode gets a theme that falls back to the default font at
-  runtime, silently.
+**None.** `README.md` → "build_runner" says font handling is CLI-only.
