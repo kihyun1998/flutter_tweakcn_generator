@@ -1,7 +1,7 @@
 # Territory map
 
 <!-- grill-map build stamp: 18c00d1 -->
-<!-- grill-map synced at: 2980252 (2026-10-25) -->
+<!-- grill-map synced at: 74a19dd (2026-10-25) -->
 
 The territory map. A comment's why, trap and measured value go to a note here.
 Notes are added as they come up, or all at once with `grill-map`, which also
@@ -47,6 +47,7 @@ What the system does, from the pasted CSS to the consumer's app:
 - [custom-font-scan](custom-font-scan.md): custom mode, the user's own `.ttf`
 - [pubspec-fonts](pubspec-fonts.md): reading and rewriting `flutter > fonts`
 - [font-cleanup](font-cleanup.md): `font_exclusive` deletion
+- [font-file-naming](font-file-naming.md): family name ↔ font file name
 - [cli-run](cli-run.md): the CLI, its order and its exit codes
 - [build-runner-builder](build-runner-builder.md): `.tweakcn.css` → `.tweakcn.dart`
 - [public-api](public-api.md): the exports and the runtime-consumer seam
@@ -54,12 +55,12 @@ What the system does, from the pasted CSS to the consumer's app:
 - [shipping](shipping.md): releases, ranges, published docs
 
 ## Cross-cutting invariants
-
 - [token-roster](token-roster.md): the parser's token list and the generator's agree
 - [shadow-layer-record](shadow-layer-record.md): two declarations of one record type
 - [constant-equals-factory](constant-equals-factory.md): a factory fed a theme's own tokens reproduces its constant
 - [pubspec-record-wins](pubspec-record-wins.md): pubspec, not the file name, says who owns a font file
 - [empty-means-unknown](empty-means-unknown.md): an empty family list deletes nothing
+- [weight-names](weight-names.md): the weight ↔ file-name tables in the downloader and the scanner agree
 
 ## Scope
 

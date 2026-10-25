@@ -2,7 +2,7 @@
 
 ## What it is
 Turns one CSS color value into a 32-bit ARGB integer. The supported forms are
-hex (`#rgb`, `#rrggbb`, `#rrggbbaa`), `rgb()`, `hsl()` and `oklch()`, each with
+hex (`#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`), `rgb()`, `hsl()` and `oklch()`, each with
 an optional alpha.
 
 ## Governing decisions
@@ -15,6 +15,8 @@ From reading the source.
 - **oklch:** converted to OKLab, then to linear sRGB, then gamma-encoded
   (`_oklchToArgb`, `_linearToSrgb`). A percentage chroma is scaled by 0.4
   (`_parseOklch`).
+- **Hex alpha comes last** (`#rrggbbaa`) and is moved to the front for ARGB
+  (`_parseHex`).
 - **Alpha** is accepted as a number or a percentage, and defaults to 1
   (`_parseAlpha`).
 

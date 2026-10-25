@@ -23,6 +23,7 @@ A name cannot tell the two cases apart. `RobotoSlab-Bold.ttf` looks like one of
 - [font-cleanup](font-cleanup.md): `FontCleanup.cleanFontsDirectory`
 - [custom-font-scan](custom-font-scan.md): `CustomFontScanner.scan`
 - [pubspec-fonts](pubspec-fonts.md): `PubspecFontDeclarations.familiesByFileName`, the record both read
+- [font-file-naming](font-file-naming.md): `FontFamily.ownsFile`, the guess the record overrules
 
 ## What a violation looks like
 - **In cleanup:** a file that belongs to a defined family is deleted. Under

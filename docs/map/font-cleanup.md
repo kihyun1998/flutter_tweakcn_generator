@@ -44,6 +44,7 @@ From the source (`FontCleanup.cleanFontsDirectory`, the `font_exclusive` branch 
 - [pubspec-fonts](pubspec-fonts.md): the declaration half runs through the line-matching remover, with its line-ending hazards (#16).
 - [custom-font-scan](custom-font-scan.md): in custom mode the files deleted here are the user's own and cannot be recovered.
 - [cli-run](cli-run.md): exit `2` can be caused by this step.
+- [font-file-naming](font-file-naming.md): undeclared files are judged by `ownsFile`, so tightening it changes what is deleted.
 
 ## Known holes / open
 - Like [pubspec-fonts](pubspec-fonts.md), this deletes on the consumer's disk.

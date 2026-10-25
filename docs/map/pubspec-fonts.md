@@ -50,6 +50,7 @@ From the source (`PubspecFontAdder`, `PubspecFontDeclarations`).
 - [cli-run](cli-run.md): the readiness check that decides exit code `2` reads these declarations. A family written in a form the reader parses differently reports a ready font as missing, or the reverse.
 - [font-cleanup](font-cleanup.md), [custom-font-scan](custom-font-scan.md): both decide ownership from this record.
 - [font-download](font-download.md): every declaration written here points at a path the downloader or scanner reported. A path that is not on disk fails the consumer's next Flutter build.
+- [font-file-naming](font-file-naming.md): `hasName` decides whether a declared family is defined.
 
 ## Known holes / open
 - **The adder and the remover read the same block two different ways** (YAML

@@ -70,13 +70,14 @@ measurements recorded on the issues, carried over from `lessons.md`:
   `9dd3b11`).
 
 ## Cross-cutting invariants
-**None.**
+- [weight-names](weight-names.md): `weightNames` names the files the scanner reads back
 
 ## Blast radius
 - [pubspec-fonts](pubspec-fonts.md): it declares exactly what `FontDownloadReport.fonts` lists, so a file reported here that is not on disk becomes a declaration whose asset is missing.
 - [cli-run](cli-run.md): the exit-code rule depends on the `target` convention (family name vs file name).
 - [font-cleanup](font-cleanup.md), [custom-font-scan](custom-font-scan.md): the file names written here (`FontFamily.fileNameFor`) are what the name guess later recognizes.
 - [font-stack](font-stack.md): a non-Google family in the stack becomes a 400 here.
+- [font-file-naming](font-file-naming.md): every file name written here comes from `FontFamily.fileNameFor`.
 
 ## Known holes / open
 - **No size limit** on downloaded bodies (see `## Design model`).

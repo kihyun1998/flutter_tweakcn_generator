@@ -44,6 +44,7 @@ This territory covers how the package reaches consumers:
 
 ## Blast radius
 - [output-formatting](output-formatting.md): moving either end of the `dart_style` range changes what every Flutter consumer can resolve.
+- [build-runner-builder](build-runner-builder.md): the `build` range is the API `TweakcnBuilder` compiles against. Widening it to a new major (by hand or by Dependabot, #33) can break the builder while `dart test` still resolves an older major.
 - [public-api](public-api.md): pub.dev publishes the exported dartdoc as the API reference.
 - [cli-run](cli-run.md), [colorscheme-resolution](colorscheme-resolution.md), [radius-steps](radius-steps.md): `README.md` restates their behaviour in tables and prose, so a behaviour change here drifts the README.
 

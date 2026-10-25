@@ -34,10 +34,12 @@ From the source (`CustomFontScanner.scan`).
 
 ## Cross-cutting invariants
 - [pubspec-record-wins](pubspec-record-wins.md)
+- [weight-names](weight-names.md): `_weightSuffixes` reads back what the downloader names
 
 ## Blast radius
 - [pubspec-fonts](pubspec-fonts.md): what this territory returns is written into pubspec as fact.
 - [font-cleanup](font-cleanup.md): the cleanup step guesses ownership with the same name rule.
+- [font-file-naming](font-file-naming.md): candidates are picked by `ownsFile`, a guess from the name.
 
 ## Known holes / open
 - A variable font file (`Roboto[wdth,wght].ttf`) has no weight suffix, so it is
