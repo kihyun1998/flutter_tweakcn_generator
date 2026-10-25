@@ -1,6 +1,6 @@
 # lessons
 
-The evidence log [`theflow.md`](theflow.md) points at. Two things live here:
+Two things live here:
 
 1. **Hidden state** — the facts a first-principles model of this package omits
    because the model "looks correct". Step 1 says to enumerate these *before*

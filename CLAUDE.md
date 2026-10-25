@@ -17,6 +17,36 @@ The second runs the generated code. It is also the only thing that type-checks t
 
 See the Development section of `README.md`.
 
+## Boundary
+
+The core turns CSS text into Dart text; the consumer decides what to do with
+the result. Nothing here may know what an app looks like.
+
+- Core: CSS parsing, token → `ColorScheme` resolution and its fallbacks, code
+  emission, formatting at the consumer's language version, font resolution and
+  download.
+- Consumer: which theme and when, `ThemeMode`, runtime `ThemeData` composition,
+  widget styling, the CSS itself, and all of `pubspec.yaml` outside the fonts
+  block this package writes.
+- Two seams. A build-time consumer meets only the generated file. A runtime
+  consumer (`CssParser.parse` on pasted CSS) meets the public API, so whatever
+  the generated code does that a live preview must reproduce has to be
+  reachable from it (#22).
+- A consumer's report: ask whose invariant broke first. A missing export is not
+  a wrong fallback.
+
+## Shipping
+
+- Does it change what a consumer gets? Yes → branch, PR (`Closes #N`), squash
+  merge. No (`.github/`, docs, `test/` or `tool/` only, release commits) →
+  straight to `main`.
+- Release: `chore: release X.Y.Z` bumps the version and adds the `CHANGELOG.md`
+  section; `dart pub publish --dry-run` is clean. A published CHANGELOG entry is
+  never rewritten. The maintainer runs `dart pub publish`; the agent never does.
+- After a release, check each consumer (siblings under `/Volumes/T7/GitHub`;
+  derive the list then). One may depend on this package as both a
+  `dev_dependency` and a `dependency`.
+
 ## Comments
 
 A comment says what the code is. Why it is this way, what it deliberately
@@ -31,12 +61,8 @@ content the map does not yet hold — move it first (`decant`).
 
 ### Working discipline
 
-Any substantive change — a feature slice, a bug fix, a refactor touching the
-public surface — runs through `theflow`. Its project-specific bindings (reference
-routing, the mechanism/policy boundary, proof method per layer, the gate matrix,
-the paths that always get a completeness pass) live in `docs/agents/theflow.md`,
-with the evidence behind them in `docs/agents/lessons.md`. Read the bindings
-before applying the method.
+Any substantive change runs through `thegraph`; its build is
+`docs/agents/thegraph.md`.
 
 ### Issue tracker
 
