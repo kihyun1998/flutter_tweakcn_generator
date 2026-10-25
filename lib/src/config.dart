@@ -20,8 +20,8 @@ class TweakcnConfig {
   ///   downloading from Google Fonts.
   final String fontMode;
 
-  /// When `true` and [fontMode] is `'local'`, removes font files and
-  /// pubspec.yaml font declarations that are not defined in `--font-sans`.
+  /// When `true` and [fontMode] is `'local'` or `'custom'`, removes font files
+  /// and pubspec.yaml font declarations that are not defined in `--font-sans`.
   final bool fontExclusive;
 
   /// When `true`, [fontExclusive] cleanup also runs when the CSS declares no
