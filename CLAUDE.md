@@ -42,9 +42,8 @@ Before changing the exports or answering a consumer's report, read
 - Does it change what a consumer gets? Yes → branch, PR (`Closes #N`), squash
   merge. No (`.github/`, docs, `test/` or `tool/` only, release commits) →
   straight to `main`.
-- The maintainer runs `dart pub publish`. The agent prepares the release and
-  stops there. Before a release, read
-  [`docs/map/shipping.md`](docs/map/shipping.md).
+- Before a release, run `pub-ready`, and read
+  [`docs/map/shipping.md`](docs/map/shipping.md) for what this package adds.
 
 ## Comments
 

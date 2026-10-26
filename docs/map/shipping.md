@@ -9,13 +9,13 @@ This territory covers how the package reaches consumers:
 - keeping dependencies current (#33).
 
 ## Governing decisions
-**None** as a record. The release rules are the maintainer's (carried from `CLAUDE.md` → "Shipping", 2026-10-25). `CLAUDE.md` keeps the PR-or-`main` rule and the publish guardrail.
+**None** as a record. The release rules are the maintainer's (carried from `CLAUDE.md` → "Shipping", 2026-10-25). The release bar is `pub-ready`'s ([thegraph.md](../agents/thegraph.md) ›
+Release); `CLAUDE.md` keeps the PR-or-`main` rule.
 
 ## Design model
 - **Release:** a dedicated commit `chore: release X.Y.Z` bumps `version` and adds
-  the changelog section, and `dart pub publish --dry-run` must be clean. The
-  maintainer runs `dart pub publish`; the agent never does. A published changelog
-  entry is never rewritten. 0.5.1 corrects 0.4.0's "shadcn arithmetic" line
+  the changelog section; the rest of the bar is `pub-ready`'s. A frozen entry is
+  corrected in the next one: 0.5.1 corrects 0.4.0's "shadcn arithmetic" line
   instead of editing it (`CHANGELOG.md` 0.5.1).
 - **PR or straight to `main`:** the question is whether the change alters what a
   consumer gets (`CLAUDE.md` → "Shipping").
