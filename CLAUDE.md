@@ -53,7 +53,7 @@ leaves out, the trap and the measured value go to the territory note under
 symbol first; only then start a new note, named for what the system does
 there, not for the file. History goes to the commit message. Comments
 written before this rule still carry the rest: never delete one whose
-content the map does not yet hold — move it first (`decant`).
+content the map does not yet hold — move it there first.
 
 ## Agent skills
 
